@@ -2,7 +2,7 @@ export type CoreHealth = {
   status: string;
 };
 
-const coreUrl = process.env.CORE_URL || "http://localhost:8100";
+const coreUrl = process.env.CORE_URL || "http://localhost:8000";
 
 export async function fetchCoreHealth(): Promise<CoreHealth> {
   const response = await fetch(`${coreUrl}/health`);
