@@ -12,7 +12,10 @@ import { registerVersionRoute } from "./routes/version.js";
 export function buildApp(): OpenAPIHono {
   const app = new OpenAPIHono();
 
-  app.use("*", cors());
+  app.use("*", cors({
+    origin: process.env.ALLOWED_ORIGINS?.split(",") || ["https://life.saillant.cc"],
+    credentials: true,
+  }));
   app.use("*", logger());
   app.use("/api/chat", authMiddleware);
   app.use("/api/chat", rateLimitMiddleware);
