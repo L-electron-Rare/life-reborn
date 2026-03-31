@@ -1,3 +1,6 @@
+import { initTelemetry } from "./telemetry.js";
+initTelemetry();
+
 import { serve } from "@hono/node-server";
 import { app } from "./app.js";
 
