@@ -1,7 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { authMiddleware } from "./middleware/auth.js";
+import { jwtAuthMiddleware } from "./middleware/jwt.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerChatRoute } from "./routes/chat.js";
 import { registerChatRouteV2, registerChatRouteV1 } from "./routes/chat-v2.js";
@@ -12,12 +12,18 @@ import { registerVersionRoute } from "./routes/version.js";
 export function buildApp(): OpenAPIHono {
   const app = new OpenAPIHono();
 
+  const jwtAuth = jwtAuthMiddleware({
+    jwksUrl: process.env.KEYCLOAK_JWKS_URL || "https://auth.saillant.cc/realms/finefab/protocol/openid-connect/certs",
+    issuer: process.env.KEYCLOAK_ISSUER || "https://auth.saillant.cc/realms/finefab",
+    bypassAuth: process.env.LIFE_REBORN_ALLOW_PUBLIC_API === "true",
+  });
+
   app.use("*", cors({
     origin: process.env.ALLOWED_ORIGINS?.split(",") || ["https://life.saillant.cc"],
     credentials: true,
   }));
   app.use("*", logger());
-  app.use("/api/chat", authMiddleware);
+  app.use("/api/chat", jwtAuth);
   app.use("/api/chat", rateLimitMiddleware);
   app.use("/api/v1/chat", rateLimitMiddleware);
   app.use("/api/providers", rateLimitMiddleware);

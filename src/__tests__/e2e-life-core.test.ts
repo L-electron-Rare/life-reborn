@@ -84,8 +84,8 @@ describe("End-to-End: life-reborn ↔ life-core", () => {
       })
     );
 
-    // Accept both 400 (bad request) and 500 (server error) as valid error responses
-    expect([400, 500]).toContain(response.status);
+    // Accept 400 (bad request), 401 (unauthorized — JWT guard), or 500 (server error) as valid error responses
+    expect([400, 401, 500]).toContain(response.status);
     const data = await response.json();
     expect(data).toHaveProperty("error");
   });
