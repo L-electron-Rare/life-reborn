@@ -1,32 +1,46 @@
 # life-reborn
 
-Gateway API TypeScript de FineFab (interface applicative publique).
+FineFab API gateway -- authentication, rate limiting, and OpenAPI-first routing.
 
-## Role
-- Fournir les endpoints metier et d'integration.
-- Centraliser auth, rate limit, observabilite API.
-- Servir de point d'entree pour `life-web` et les clients externes.
+Part of the [FineFab](https://github.com/L-electron-Rare) platform.
 
-## Stack
-- TypeScript
-- Hono
-- pnpm
-- vitest
+## What it does
 
-## Structure cible
-- `src/routes/`: routes API
-- `src/middleware/`: auth, validation, rate limiting
-- `openapi/`: specs generees
-- `src/generated/`: clients/types generes
+- Serves as the single public-facing entry point for all FineFab clients
+- Handles authentication and authorization for API consumers
+- Enforces rate limiting and request validation
+- Auto-generates OpenAPI 3.1 specs and typed clients
+- Proxies requests to `life-core` and other internal services
 
-## Demarrage rapide
+## Tech stack
+
+TypeScript / Hono / vitest / pnpm
+
+## Quick start
+
 ```bash
 pnpm install
-pnpm test
-pnpm build
+pnpm dev
 ```
 
-## Roadmap immediate
-- Finaliser routes critiques migrees depuis `mascarade/api`.
-- Durcir auth/rate limiting.
-- OpenAPI 3.1 + generation client stable.
+## Project structure
+
+```
+src/routes/       # API route handlers
+src/middleware/    # Auth, validation, rate limiting
+openapi/          # Generated OpenAPI specs
+src/generated/    # Generated clients and types
+```
+
+## Related repos
+
+| Repo | Role |
+|------|------|
+| [life-core](https://github.com/L-electron-Rare/life-core) | AI backend engine |
+| [life-web](https://github.com/L-electron-Rare/life-web) | Operator cockpit UI |
+| [life-spec](https://github.com/L-electron-Rare/life-spec) | Functional specifications and BMAD gates |
+| [finefab-shared](https://github.com/L-electron-Rare/finefab-shared) | Shared contracts and types |
+
+## License
+
+[MIT](LICENSE)
