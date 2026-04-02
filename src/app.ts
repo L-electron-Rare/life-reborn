@@ -5,6 +5,7 @@ import { jwtAuthMiddleware } from "./middleware/jwt.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerChatRoute } from "./routes/chat.js";
 import { registerChatRouteV2, registerChatRouteV1 } from "./routes/chat-v2.js";
+import { registerBrowserRoute } from "./routes/browser.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerProvidersRoute } from "./routes/providers.js";
 import { registerVersionRoute } from "./routes/version.js";
@@ -24,7 +25,9 @@ export function buildApp(): OpenAPIHono {
   }));
   app.use("*", logger());
   app.use("/api/chat", jwtAuth);
+  app.use("/api/browser", jwtAuth);
   app.use("/api/chat", rateLimitMiddleware);
+  app.use("/api/browser", rateLimitMiddleware);
   app.use("/api/v1/chat", rateLimitMiddleware);
   app.use("/api/providers", rateLimitMiddleware);
 
@@ -34,6 +37,7 @@ export function buildApp(): OpenAPIHono {
   registerChatRoute(app);
   registerChatRouteV1(app);
   registerChatRouteV2(app);
+  registerBrowserRoute(app);
 
   app.doc("/doc", {
     openapi: "3.0.0",
