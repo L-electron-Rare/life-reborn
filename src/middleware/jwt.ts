@@ -11,6 +11,11 @@ let jwks: jose.JSONWebKeySet | null = null;
 let jwksLastFetch = 0;
 const JWKS_CACHE_TTL_MS = 300_000; // 5 min
 
+export function resetJwtCacheForTests(): void {
+  jwks = null;
+  jwksLastFetch = 0;
+}
+
 async function getJWKS(url: string): Promise<jose.JSONWebKeySet> {
   const now = Date.now();
   if (jwks && now - jwksLastFetch < JWKS_CACHE_TTL_MS) {

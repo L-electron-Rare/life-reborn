@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { buildApp } from "./app.js";
+import { resetJwtCacheForTests } from "./middleware/jwt.js";
 
 describe("life-reborn bootstrap", () => {
   afterEach(() => {
-    delete process.env.LIFE_REBORN_API_TOKEN;
     delete process.env.LIFE_REBORN_ALLOW_PUBLIC_API;
+    delete process.env.CORE_URL;
+    delete process.env.KEYCLOAK_JWKS_URL;
+    delete process.env.KEYCLOAK_ISSUER;
+    resetJwtCacheForTests();
   });
 
   it("returns providers without auth by default", async () => {
@@ -13,13 +17,12 @@ describe("life-reborn bootstrap", () => {
     expect(response.status).toBe(200);
   });
 
-  it("protects the chat route when auth is configured", async () => {
-    process.env.LIFE_REBORN_API_TOKEN = "secret-token";
+  it("protects the chat route when no bearer token is provided", async () => {
     const app = buildApp();
     const response = await app.request("/api/chat", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: "hello" }),
+      body: JSON.stringify({ messages: [{ role: "user", content: "hello" }] }),
     });
     expect(response.status).toBe(401);
   });

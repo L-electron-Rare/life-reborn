@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { fetchCore } from "../client/core.js";
 
 const BrowserScrapeRequestSchema = z.object({
   url: z.string().url(),
@@ -54,8 +55,7 @@ export function registerBrowserRoute(app: OpenAPIHono): void {
     const payload = c.req.valid("json");
 
     try {
-      const lifeCoreUrl = process.env.LIFE_CORE_URL || "http://localhost:8000";
-      const response = await fetch(`${lifeCoreUrl}/scrape`, {
+      const response = await fetchCore("/scrape", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

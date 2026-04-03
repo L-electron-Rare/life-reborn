@@ -3,6 +3,7 @@
  */
 
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { fetchCore } from "../client/core.js";
 
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
@@ -19,9 +20,10 @@ const ChatResponseSchema = z.object({
   model: z.string(),
   provider: z.string(),
   usage: z.object({
-    inputTokens: z.number().optional(),
-    outputTokens: z.number().optional(),
+    input_tokens: z.number().optional(),
+    output_tokens: z.number().optional(),
   }).optional(),
+  trace_id: z.string().optional(),
 });
 
 const chatRoute = createRoute({
@@ -64,16 +66,15 @@ interface LifeCoreResponse {
   model: string;
   provider: string;
   usage?: Record<string, number>;
+  trace_id?: string;
 }
 
-export async function registerChatRouteV2(app: OpenAPIHono): Promise<void> {
+export function registerChatRouteV2(app: OpenAPIHono): void {
   app.openapi(chatRoute, async (c) => {
     const payload = c.req.valid("json");
     
     try {
-      // Appeler life-core API
-      const lifeCoreUrl = process.env.LIFE_CORE_URL || "http://localhost:8000";
-      const response = await fetch(`${lifeCoreUrl}/chat`, {
+      const response = await fetchCore("/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,6 +104,7 @@ export async function registerChatRouteV2(app: OpenAPIHono): Promise<void> {
           model: data.model,
           provider: data.provider,
           usage: data.usage,
+          trace_id: data.trace_id,
         },
         200
       );

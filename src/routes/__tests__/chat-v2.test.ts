@@ -5,9 +5,9 @@ import { registerChatRouteV2, registerChatRouteV1 } from "../chat-v2.js";
 describe("Chat V2 Route - life-core integration", () => {
   let app: OpenAPIHono;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     app = new OpenAPIHono();
-    await registerChatRouteV2(app);
+    registerChatRouteV2(app);
     registerChatRouteV1(app);
   });
 
@@ -66,9 +66,9 @@ describe("Chat V2 Route - life-core integration", () => {
 describe("Chat V2 Route - Request Validation", () => {
   let app: OpenAPIHono;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     app = new OpenAPIHono();
-    await registerChatRouteV2(app);
+    registerChatRouteV2(app);
   });
 
   it("should validate required messages field", async () => {
@@ -113,7 +113,7 @@ describe("Chat V2 Route - Request Validation", () => {
           content: "Mocked response",
           model: "claude-3-5-sonnet-20241022",
           provider: "claude",
-          usage: { inputTokens: 10, outputTokens: 20 },
+          usage: { input_tokens: 10, output_tokens: 20 },
         }),
         { status: 200 }
       )

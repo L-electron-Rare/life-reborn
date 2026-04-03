@@ -3,9 +3,9 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { jwtAuthMiddleware } from "./middleware/jwt.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
-import { registerChatRoute } from "./routes/chat.js";
 import { registerChatRouteV2, registerChatRouteV1 } from "./routes/chat-v2.js";
 import { registerBrowserRoute } from "./routes/browser.js";
+import { registerCoreProxyRoutes } from "./routes/core-proxy.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerProvidersRoute } from "./routes/providers.js";
 import { registerVersionRoute } from "./routes/version.js";
@@ -30,14 +30,15 @@ export function buildApp(): OpenAPIHono {
   app.use("/api/browser", rateLimitMiddleware);
   app.use("/api/v1/chat", rateLimitMiddleware);
   app.use("/api/providers", rateLimitMiddleware);
+  app.use("/api/audit", rateLimitMiddleware);
 
   registerHealthRoute(app);
   registerVersionRoute(app);
   registerProvidersRoute(app);
-  registerChatRoute(app);
   registerChatRouteV1(app);
   registerChatRouteV2(app);
   registerBrowserRoute(app);
+  registerCoreProxyRoutes(app);
 
   app.doc("/doc", {
     openapi: "3.0.0",

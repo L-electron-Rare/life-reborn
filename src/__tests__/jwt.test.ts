@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { Hono } from "hono";
-import { jwtAuthMiddleware } from "../middleware/jwt";
+import { jwtAuthMiddleware, resetJwtCacheForTests } from "../middleware/jwt";
 
 describe("JWT Auth Middleware", () => {
+  beforeEach(() => {
+    resetJwtCacheForTests();
+  });
+
   function createApp(opts: { bypass?: boolean } = {}) {
     const app = new Hono();
     app.use(
