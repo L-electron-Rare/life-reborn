@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import { fetchCore } from "../client/core.js";
 
 type ProxyRoute = {
@@ -27,6 +27,84 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/api/audit/status", upstreamPath: "/audit/status" },
   { path: "/api/audit/report", upstreamPath: "/audit/report" },
 ];
+
+const passthroughErrorSchema = z.object({
+  error: z.string(),
+});
+
+const documentedReadRoutes = [
+  createRoute({
+    method: "get",
+    path: "/stats/timeseries",
+    request: {
+      query: z.object({
+        points: z.string().optional(),
+      }),
+    },
+    responses: {
+      200: {
+        description: "Timeseries stats proxied from life-core",
+        content: {
+          "application/json": {
+            schema: z.unknown(),
+          },
+        },
+      },
+      502: {
+        description: "Proxy error while calling life-core",
+        content: {
+          "application/json": {
+            schema: passthroughErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  createRoute({
+    method: "get",
+    path: "/api/audit/status",
+    responses: {
+      200: {
+        description: "Governance audit status proxied from life-core",
+        content: {
+          "application/json": {
+            schema: z.unknown(),
+          },
+        },
+      },
+      502: {
+        description: "Proxy error while calling life-core",
+        content: {
+          "application/json": {
+            schema: passthroughErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  createRoute({
+    method: "get",
+    path: "/api/audit/report",
+    responses: {
+      200: {
+        description: "Governance audit report proxied from life-core",
+        content: {
+          "application/json": {
+            schema: z.unknown(),
+          },
+        },
+      },
+      502: {
+        description: "Proxy error while calling life-core",
+        content: {
+          "application/json": {
+            schema: passthroughErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+] as const;
 
 async function proxyToCore(c: Context, upstreamPath = c.req.path): Promise<Response> {
   try {
@@ -57,7 +135,22 @@ async function proxyToCore(c: Context, upstreamPath = c.req.path): Promise<Respo
 }
 
 export function registerCoreProxyRoutes(app: OpenAPIHono): void {
+  const documentedPaths = new Set<string>(documentedReadRoutes.map((route) => route.path));
+
+  for (const route of documentedReadRoutes) {
+    const proxiedPath = route.path === "/api/audit/status"
+      ? "/audit/status"
+      : route.path === "/api/audit/report"
+        ? "/audit/report"
+        : undefined;
+
+    app.openapi(route, ((c: Context) => proxyToCore(c, proxiedPath)) as never);
+  }
+
   for (const route of CORE_PROXY_ROUTES) {
+    if (documentedPaths.has(route.path)) {
+      continue;
+    }
     app.all(route.path, (c) => proxyToCore(c, route.upstreamPath));
   }
 }

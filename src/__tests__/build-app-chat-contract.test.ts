@@ -224,4 +224,18 @@ describe("buildApp chat contract", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledWith(`${CORE_URL}/stats/timeseries?points=20`, expect.anything());
   });
+
+  it("documents governance and cockpit proxy routes in OpenAPI", async () => {
+    process.env.LIFE_REBORN_ALLOW_PUBLIC_API = "true";
+
+    const app = buildApp();
+    const response = await app.request("/doc");
+
+    expect(response.status).toBe(200);
+
+    const spec = await response.json() as { paths: Record<string, unknown> };
+    expect(spec.paths).toHaveProperty("/api/audit/status");
+    expect(spec.paths).toHaveProperty("/api/audit/report");
+    expect(spec.paths).toHaveProperty("/stats/timeseries");
+  });
 });
