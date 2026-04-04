@@ -18,6 +18,8 @@ describe("JWT Auth Middleware", () => {
       })
     );
     app.get("/protected", (c) => c.json({ ok: true }));
+    // Catch-all for testing JWT on any path
+    app.all("/*", (c) => c.json({ ok: true }));
     return app;
   }
 
@@ -51,5 +53,14 @@ describe("JWT Auth Middleware", () => {
       headers: { Authorization: "Basic dXNlcjpwYXNz" },
     });
     expect(res.status).toBe(401);
+  });
+
+  it("should return 401 on proxy routes when auth is enabled", async () => {
+    const app = createApp();
+    const proxyPaths = ["/models", "/stats", "/conversations", "/rag/stats", "/infra/containers"];
+    for (const path of proxyPaths) {
+      const res = await app.request(path);
+      expect(res.status).toBe(401);
+    }
   });
 });

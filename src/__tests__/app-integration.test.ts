@@ -49,7 +49,7 @@ describe("App Integration - Routes Registration", () => {
     expect(data.status).toBe("ready");
   });
 
-  it("should have /api/v1/chat bootstrap endpoint", async () => {
+  it("should return 401 on /api/v1/chat without auth", async () => {
     const app = buildApp();
     const response = await app.request(
       new Request("http://localhost/api/v1/chat", {
@@ -63,10 +63,7 @@ describe("App Integration - Routes Registration", () => {
         }),
       })
     );
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data).toHaveProperty("content");
-    expect(data.provider).toBe("bootstrap");
+    expect(response.status).toBe(401);
   });
 
   it("should handle CORS configuration", async () => {

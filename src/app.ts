@@ -24,8 +24,13 @@ export function buildApp(): OpenAPIHono {
     credentials: true,
   }));
   app.use("*", logger());
-  app.use("/api/chat", jwtAuth);
-  app.use("/api/browser", jwtAuth);
+  // JWT auth on all routes except health, version, doc, root
+  app.use("*", async (c, next) => {
+    const path = c.req.path;
+    const publicPaths = ["/health", "/api/version", "/doc", "/"];
+    if (publicPaths.includes(path)) return next();
+    return jwtAuth(c, next);
+  });
   app.use("/api/chat", rateLimitMiddleware);
   app.use("/api/browser", rateLimitMiddleware);
   app.use("/api/v1/chat", rateLimitMiddleware);

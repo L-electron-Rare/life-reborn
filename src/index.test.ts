@@ -11,10 +11,10 @@ describe("life-reborn bootstrap", () => {
     resetJwtCacheForTests();
   });
 
-  it("returns providers without auth by default", async () => {
+  it("returns 401 on protected routes without auth", async () => {
     const app = buildApp();
     const response = await app.request("/api/providers");
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(401);
   });
 
   it("protects the chat route when no bearer token is provided", async () => {
