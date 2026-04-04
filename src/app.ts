@@ -14,8 +14,8 @@ export function buildApp(): OpenAPIHono {
   const app = new OpenAPIHono();
 
   const jwtAuth = jwtAuthMiddleware({
-    jwksUrl: process.env.KEYCLOAK_JWKS_URL || "https://auth.saillant.cc/realms/electro_life/protocol/openid-connect/certs",
-    issuer: process.env.KEYCLOAK_ISSUER || "https://auth.saillant.cc/realms/electro_life",
+    jwksUrl: process.env.KEYCLOAK_JWKS_URL || "https://auth.saillant.cc/realms/electron_rare/protocol/openid-connect/certs",
+    issuer: process.env.KEYCLOAK_ISSUER || "https://auth.saillant.cc/realms/electron_rare",
     bypassAuth: process.env.LIFE_REBORN_ALLOW_PUBLIC_API === "true",
   });
 
