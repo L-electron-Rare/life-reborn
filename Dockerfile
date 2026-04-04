@@ -1,20 +1,18 @@
 FROM node:22-alpine AS builder
 
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-RUN pnpm run build
+RUN npm run build
 
 FROM node:22-alpine
 
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile --prod && pnpm store prune
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 
 USER app
