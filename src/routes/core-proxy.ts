@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
-import { fetchCore } from "../client/core.js";
+import { buildForwardHeaders, fetchCore } from "../client/core.js";
 
 type ProxyRoute = {
   path: string;
@@ -28,6 +28,7 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/traces/recent" },
   { path: "/api/audit/status", upstreamPath: "/audit/status" },
   { path: "/api/audit/report", upstreamPath: "/audit/report" },
+  { path: "/api/search", upstreamPath: "/rag/search" },
 ];
 
 const passthroughErrorSchema = z.object({
@@ -46,6 +47,35 @@ const documentedReadRoutes = [
     responses: {
       200: {
         description: "Timeseries stats proxied from life-core",
+        content: {
+          "application/json": {
+            schema: z.unknown(),
+          },
+        },
+      },
+      502: {
+        description: "Proxy error while calling life-core",
+        content: {
+          "application/json": {
+            schema: passthroughErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  createRoute({
+    method: "get",
+    path: "/api/search",
+    request: {
+      query: z.object({
+        q: z.string().optional(),
+        top_k: z.string().optional(),
+        collections: z.string().optional(),
+      }),
+    },
+    responses: {
+      200: {
+        description: "RAG search results proxied from life-core",
         content: {
           "application/json": {
             schema: z.unknown(),
@@ -109,10 +139,10 @@ const documentedReadRoutes = [
 ] as const;
 
 async function proxyToCore(c: Context, upstreamPath = c.req.path): Promise<Response> {
+  const { headers, correlationId } = buildForwardHeaders(c.req.raw, c.req.raw.headers);
   try {
     const requestUrl = new URL(c.req.url);
     const targetPath = `${upstreamPath}${requestUrl.search}`;
-    const headers = new Headers(c.req.raw.headers);
     headers.delete("host");
 
     const init: RequestInit & { duplex?: "half" } = {
@@ -126,13 +156,19 @@ async function proxyToCore(c: Context, upstreamPath = c.req.path): Promise<Respo
     }
 
     const response = await fetchCore(targetPath, init);
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set("X-Correlation-ID", correlationId);
     return new Response(response.body, {
       status: response.status,
-      headers: response.headers,
+      headers: responseHeaders,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    return c.json({ error: `Failed to call life-core: ${message}` }, 502);
+    return c.json(
+      { error: `Failed to call life-core: ${message}` },
+      502,
+      { "X-Correlation-ID": correlationId },
+    );
   }
 }
 
@@ -144,7 +180,9 @@ export function registerCoreProxyRoutes(app: OpenAPIHono): void {
       ? "/audit/status"
       : route.path === "/api/audit/report"
         ? "/audit/report"
-        : undefined;
+        : route.path === "/api/search"
+          ? "/rag/search"
+          : undefined;
 
     app.openapi(route, ((c: Context) => proxyToCore(c, proxiedPath)) as never);
   }
