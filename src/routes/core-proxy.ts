@@ -10,6 +10,7 @@ type ProxyRoute = {
 const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/models" },
   { path: "/models/catalog" },
+  { path: "/chat/stream" },
   { path: "/stats" },
   { path: "/stats/timeseries" },
   { path: "/conversations" },

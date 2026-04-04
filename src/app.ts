@@ -29,6 +29,7 @@ export function buildApp(): OpenAPIHono {
   app.use("/api/chat", rateLimitMiddleware);
   app.use("/api/browser", rateLimitMiddleware);
   app.use("/api/v1/chat", rateLimitMiddleware);
+  app.use("/chat/stream", rateLimitMiddleware);
   app.use("/api/providers", rateLimitMiddleware);
   app.use("/api/audit", rateLimitMiddleware);
 
