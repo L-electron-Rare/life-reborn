@@ -19,6 +19,7 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/rag/stats" },
   { path: "/rag/search" },
   { path: "/rag/documents" },
+  { path: "/rag/documents/:id" },
   { path: "/infra/containers" },
   { path: "/infra/storage" },
   { path: "/infra/network" },
