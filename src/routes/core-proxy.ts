@@ -32,6 +32,8 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/traces/recent" },
   { path: "/api/audit/status", upstreamPath: "/audit/status" },
   { path: "/api/audit/report", upstreamPath: "/audit/report" },
+  { path: "/api/chat/stream", upstreamPath: "/chat/stream" },
+  { path: "/api/alerts", upstreamPath: "/alerts" },
 ];
 
 const passthroughErrorSchema = z.object({
@@ -452,6 +454,7 @@ const documentedReadRoutes = [
   }),
   createRoute({
     method: "get",
+<<<<<<< HEAD
     path: "/stats",
     responses: {
       200: {
@@ -478,14 +481,27 @@ const documentedReadRoutes = [
     request: {
       query: z.object({
         points: z.coerce.number().int().min(1).max(60).optional(),
+=======
+    path: "/api/alerts",
+    request: {
+      query: z.object({
+        tail: z.string().optional(),
+>>>>>>> 7ba39e2 (fix: add /api/chat/stream proxy route)
       }),
     },
     responses: {
       200: {
+<<<<<<< HEAD
         description: "Timeseries stats proxied from life-core",
         content: {
           "application/json": {
             schema: statsTimeseriesResponseSchema,
+=======
+        description: "JSONL alerts proxied from life-core",
+        content: {
+          "application/json": {
+            schema: z.unknown(),
+>>>>>>> 7ba39e2 (fix: add /api/chat/stream proxy route)
           },
         },
       },
@@ -501,6 +517,7 @@ const documentedReadRoutes = [
   }),
   createRoute({
     method: "get",
+<<<<<<< HEAD
     path: "/logs/recent",
     request: {
       query: z.object({
@@ -976,6 +993,8 @@ const documentedReadRoutes = [
   }),
   createRoute({
     method: "get",
+=======
+>>>>>>> 7ba39e2 (fix: add /api/chat/stream proxy route)
     path: "/api/audit/status",
     responses: {
       200: {
@@ -1252,7 +1271,13 @@ export function registerCoreProxyRoutes(app: OpenAPIHono): void {
         ? "/audit/report"
         : route.path === "/api/search"
           ? "/rag/search"
+<<<<<<< HEAD
         : undefined;
+=======
+          : route.path === "/api/alerts"
+            ? "/alerts"
+            : undefined;
+>>>>>>> 7ba39e2 (fix: add /api/chat/stream proxy route)
 
     app.openapi(route, ((c: Context) => proxyToCore(c, proxiedPath)) as never);
   }
