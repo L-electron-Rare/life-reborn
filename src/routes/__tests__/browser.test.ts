@@ -12,6 +12,22 @@ import {
   toCoreBrowserScrapeRequest,
 } from "../browser.js";
 
+const CONTRACT_CANDIDATES = [
+  path.resolve(process.cwd(), "../finefab-shared/schemas/browser_scrape.schema.json"),
+  path.resolve(process.cwd(), "src/routes/__tests__/fixtures/browser_scrape.schema.json"),
+];
+
+async function readBrowserContract() {
+  for (const contractPath of CONTRACT_CANDIDATES) {
+    try {
+      return JSON.parse(await readFile(contractPath, "utf8"));
+    } catch {
+      // Try the next location. Standalone CI does not checkout sibling repos.
+    }
+  }
+  throw new Error("Unable to locate browser scrape contract snapshot");
+}
+
 describe("Browser Route - life-core integration", () => {
   let app: OpenAPIHono;
 
@@ -81,11 +97,7 @@ describe("Browser Route - life-core integration", () => {
   });
 
   it("should stay aligned with finefab-shared browser_scrape.schema.json", async () => {
-    const contractPath = path.resolve(
-      process.cwd(),
-      "../finefab-shared/schemas/browser_scrape.schema.json",
-    );
-    const contract = JSON.parse(await readFile(contractPath, "utf8"));
+    const contract = await readBrowserContract();
 
     const requestSchema = contract.properties.request;
     const responseSchema = contract.properties.response;
