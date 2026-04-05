@@ -5,16 +5,21 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 vi.mock("../client/core.js", () => ({
   fetchCoreHealth: vi.fn(),
   fetchCore: vi.fn(),
+  buildForwardHeaders: vi.fn((_request: Request, initHeaders?: HeadersInit) => ({
+    headers: new Headers(initHeaders),
+    correlationId: "corr-test-123",
+  })),
   getCoreUrl: vi.fn().mockReturnValue("http://localhost:8000"),
   buildCoreUrl: vi.fn((p: string) => `http://localhost:8000${p}`),
 }));
 
-import { fetchCoreHealth, fetchCore } from "../client/core.js";
+import { fetchCoreHealth, fetchCore, buildForwardHeaders } from "../client/core.js";
 import { registerHealthRoute } from "../routes/health.js";
 import { registerCoreProxyRoutes } from "../routes/core-proxy.js";
 
 const mockFetchCoreHealth = vi.mocked(fetchCoreHealth);
 const mockFetchCore = vi.mocked(fetchCore);
+const mockBuildForwardHeaders = vi.mocked(buildForwardHeaders);
 
 // ---------------------------------------------------------------------------
 // Health route tests
@@ -102,6 +107,13 @@ describe("Health route - fetchCoreHealth fails", () => {
 // ---------------------------------------------------------------------------
 
 describe("Core proxy routes - successful passthrough", () => {
+  beforeEach(() => {
+    mockBuildForwardHeaders.mockReturnValue({
+      headers: new Headers(),
+      correlationId: "corr-test-123",
+    });
+  });
+
   it("proxies GET /models and returns the upstream response body", async () => {
     mockFetchCore.mockResolvedValue(
       new Response(JSON.stringify({ models: ["gpt-4", "claude-3"] }), {
@@ -113,6 +125,7 @@ describe("Core proxy routes - successful passthrough", () => {
     registerCoreProxyRoutes(app);
     const res = await app.request("/models");
     expect(res.status).toBe(200);
+    expect(res.headers.get("x-correlation-id")).toBe("corr-test-123");
     const data = await res.json();
     expect(data).toHaveProperty("models");
   });
@@ -130,6 +143,34 @@ describe("Core proxy routes - successful passthrough", () => {
     expect(res.status).toBe(200);
   });
 
+  it("proxies GET /api/search to the RAG search upstream and preserves query strings", async () => {
+    mockFetchCore.mockImplementation(async (path: string) => {
+      expect(path).toBe("/rag/search?q=pcb&top_k=2&collections=life_chunks");
+      return new Response(JSON.stringify({
+        query: "pcb",
+        mode: "dense",
+        collections: ["life_chunks"],
+        results: [],
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/api/search?q=pcb&top_k=2&collections=life_chunks");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-correlation-id")).toBe("corr-test-123");
+    expect(await res.json()).toEqual({
+      query: "pcb",
+      mode: "dense",
+      collections: ["life_chunks"],
+      results: [],
+    });
+  });
+
   it("proxies GET /conversations and returns upstream body", async () => {
     mockFetchCore.mockResolvedValue(
       new Response(JSON.stringify({ conversations: [] }), {
@@ -144,6 +185,63 @@ describe("Core proxy routes - successful passthrough", () => {
     const data = await res.json();
     expect(data).toHaveProperty("conversations");
   });
+
+  it("proxies parameterized conversation routes with the documented OpenAPI paths", async () => {
+    mockFetchCore.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === "/conversations/conv-123" && init?.method === "GET") {
+        return new Response(JSON.stringify({
+          id: "conv-123",
+          title: "Test conversation",
+          provider: "ollama",
+          messages: [{ role: "user", content: "hello" }],
+          created_at: "2026-04-05T00:00:00Z",
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (path === "/conversations/conv-123/messages" && init?.method === "POST") {
+        return new Response(JSON.stringify({ status: "ok", message_count: 2 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (path === "/conversations/conv-123" && init?.method === "DELETE") {
+        return new Response(JSON.stringify({ status: "deleted" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetchCore call: ${path} ${init?.method}`);
+    });
+
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+
+    const getRes = await app.request("/conversations/conv-123");
+    const addRes = await app.request(
+      new Request("http://localhost/conversations/conv-123/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role: "user", content: "hello" }),
+      }),
+    );
+    const deleteRes = await app.request(
+      new Request("http://localhost/conversations/conv-123", {
+        method: "DELETE",
+      }),
+    );
+
+    expect(getRes.status).toBe(200);
+    expect(await getRes.json()).toMatchObject({ id: "conv-123", provider: "ollama" });
+    expect(addRes.status).toBe(200);
+    expect(await addRes.json()).toEqual({ status: "ok", message_count: 2 });
+    expect(deleteRes.status).toBe(200);
+    expect(await deleteRes.json()).toEqual({ status: "deleted" });
+  });
 });
 
 describe("Core proxy routes - upstream failures", () => {
@@ -153,6 +251,7 @@ describe("Core proxy routes - upstream failures", () => {
     registerCoreProxyRoutes(app);
     const res = await app.request("/models");
     expect(res.status).toBe(502);
+    expect(res.headers.get("x-correlation-id")).toBe("corr-test-123");
     const data = await res.json();
     expect(data.error).toContain("Failed to call life-core");
   });

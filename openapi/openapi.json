@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "life-reborn API",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "description": "Gateway API for life-reborn service, bridging to life-core backend",
     "contact": {
       "name": "Factory 4 Life",
@@ -18,18 +18,17 @@
       "description": "Development server"
     },
     {
-      "url": "https://api.factory4life.com",
+      "url": "https://api.saillant.cc",
       "description": "Production server"
     }
   ],
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
   "paths": {
     "/health": {
       "get": {
-        "summary": "Health check",
-        "operationId": "getHealth",
-        "tags": [
-          "System"
-        ],
         "responses": {
           "200": {
             "description": "Gateway health status",
@@ -45,6 +44,24 @@
                     "core": {
                       "type": "string",
                       "example": "ok"
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": []
+                    },
+                    "backends": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": []
+                    },
+                    "cache_available": {
+                      "type": "boolean",
+                      "default": false
                     }
                   },
                   "required": [
@@ -64,13 +81,35 @@
                   "properties": {
                     "status": {
                       "type": "string",
-                      "example": "degraded"
+                      "example": "ok"
                     },
                     "core": {
                       "type": "string",
-                      "example": "unreachable"
+                      "example": "ok"
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": []
+                    },
+                    "backends": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "default": []
+                    },
+                    "cache_available": {
+                      "type": "boolean",
+                      "default": false
                     }
-                  }
+                  },
+                  "required": [
+                    "status",
+                    "core"
+                  ]
                 }
               }
             }
@@ -80,31 +119,26 @@
     },
     "/api/version": {
       "get": {
-        "summary": "Get API version",
-        "operationId": "getVersion",
-        "tags": [
-          "System"
-        ],
         "responses": {
           "200": {
-            "description": "API version information",
+            "description": "Gateway version",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "version": {
-                      "type": "string",
-                      "example": "1.0.0"
-                    },
-                    "name": {
+                    "service": {
                       "type": "string",
                       "example": "life-reborn"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "0.1.0"
                     }
                   },
                   "required": [
-                    "version",
-                    "name"
+                    "service",
+                    "version"
                   ]
                 }
               }
@@ -115,14 +149,9 @@
     },
     "/api/providers": {
       "get": {
-        "summary": "Get available LLM providers",
-        "operationId": "getProviders",
-        "tags": [
-          "Models"
-        ],
         "responses": {
           "200": {
-            "description": "List of available LLM providers",
+            "description": "Configured provider list",
             "content": {
               "application/json": {
                 "schema": {
@@ -131,24 +160,18 @@
                     "providers": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "name": {
-                            "type": "string"
-                          },
-                          "available": {
-                            "type": "boolean"
-                          },
-                          "models": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
+                        "type": "string"
+                      },
+                      "example": [
+                        "claude",
+                        "openai",
+                        "mistral"
+                      ]
                     }
-                  }
+                  },
+                  "required": [
+                    "providers"
+                  ]
                 }
               }
             }
@@ -156,13 +179,8 @@
         }
       }
     },
-    "/api/chat": {
+    "/api/v1/chat": {
       "post": {
-        "summary": "Send message via life-core LLM router",
-        "operationId": "chat",
-        "tags": [
-          "Chat"
-        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -172,7 +190,6 @@
                 "properties": {
                   "messages": {
                     "type": "array",
-                    "minItems": 1,
                     "items": {
                       "type": "object",
                       "properties": {
@@ -192,7 +209,104 @@
                         "role",
                         "content"
                       ]
+                    },
+                    "minItems": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "default": "claude-3-5-sonnet-20241022"
+                  },
+                  "provider": {
+                    "type": "string"
+                  },
+                  "useRag": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "messages"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bootstrap chat response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "content": {
+                      "type": "string"
+                    },
+                    "model": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "usage": {
+                      "type": "object",
+                      "properties": {
+                        "input_tokens": {
+                          "type": "number"
+                        },
+                        "output_tokens": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "trace_id": {
+                      "type": "string"
                     }
+                  },
+                  "required": [
+                    "content",
+                    "model",
+                    "provider"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "user",
+                            "assistant",
+                            "system"
+                          ]
+                        },
+                        "content": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "role",
+                        "content"
+                      ]
+                    },
+                    "minItems": 1
                   },
                   "model": {
                     "type": "string",
@@ -233,13 +347,16 @@
                     "usage": {
                       "type": "object",
                       "properties": {
-                        "inputTokens": {
+                        "input_tokens": {
                           "type": "number"
                         },
-                        "outputTokens": {
+                        "output_tokens": {
                           "type": "number"
                         }
                       }
+                    },
+                    "trace_id": {
+                      "type": "string"
                     }
                   },
                   "required": [
@@ -261,7 +378,10 @@
                     "error": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -269,12 +389,1651 @@
         }
       }
     },
-    "/api/v1/chat": {
+    "/api/browser/scrape": {
       "post": {
-        "summary": "Bootstrap chat endpoint (fallback when life-core unavailable)",
-        "operationId": "chatV1",
-        "tags": [
-          "Chat"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "selector": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "timeoutMs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 120000,
+                    "default": 15000
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scrape response from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "title",
+                    "content"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error calling life-core scraping endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Available models proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "models"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/models/catalog": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Curated model catalog proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "domain": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string"
+                          },
+                          "context_window": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "provider",
+                          "domain",
+                          "description",
+                          "size",
+                          "location"
+                        ]
+                      }
+                    },
+                    "domains": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "models",
+                    "domains"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Aggregated runtime stats proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "chat_service": {
+                      "type": "object",
+                      "properties": {
+                        "requests": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cache_hits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cache_stats": {
+                          "type": "object",
+                          "properties": {
+                            "l1": {
+                              "type": "object",
+                              "properties": {
+                                "hits": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "misses": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "size": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "max_size": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                }
+                              },
+                              "required": [
+                                "hits",
+                                "misses",
+                                "size",
+                                "max_size"
+                              ]
+                            },
+                            "l2": {
+                              "type": "object",
+                              "properties": {
+                                "hits": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "misses": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "available": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "hits",
+                                "misses",
+                                "available"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "l1",
+                            "l2"
+                          ]
+                        },
+                        "rag_stats": {
+                          "type": "object",
+                          "nullable": true,
+                          "properties": {
+                            "documents": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "chunks": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "vectors": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "retrieval_mode": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "vectors"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "requests",
+                        "cache_hits",
+                        "cache_stats"
+                      ]
+                    },
+                    "router": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "boolean"
+                          }
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "chat_service",
+                    "router"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stats/timeseries": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            },
+            "required": false,
+            "name": "points",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Timeseries stats proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "series": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "time": {
+                            "type": "string"
+                          },
+                          "timestamp": {
+                            "type": "integer"
+                          },
+                          "p50": {
+                            "type": "number"
+                          },
+                          "p99": {
+                            "type": "number"
+                          },
+                          "calls": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "errors": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "time",
+                          "timestamp",
+                          "p50",
+                          "p99",
+                          "calls",
+                          "errors"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total_calls": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "total_errors": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "p50_ms": {
+                          "type": "number"
+                        },
+                        "p99_ms": {
+                          "type": "number"
+                        },
+                        "error_rate": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "total_calls",
+                        "total_errors",
+                        "p50_ms",
+                        "p99_ms",
+                        "error_rate"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "series",
+                    "summary"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/recent": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent buffered logs proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "logs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "timestamp": {
+                            "type": "string"
+                          },
+                          "level": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "source": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "timestamp",
+                          "level",
+                          "message",
+                          "source"
+                        ]
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "logs",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Conversation summaries proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "conversations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "message_count": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "created_at",
+                          "provider",
+                          "message_count"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "conversations"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Conversation store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "provider": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversation created via life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "role",
+                          "content"
+                        ]
+                      }
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "provider",
+                    "messages",
+                    "created_at"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Conversation store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{convId}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "convId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation detail proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "role": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "role",
+                          "content"
+                        ]
+                      }
+                    },
+                    "created_at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "provider",
+                    "messages",
+                    "created_at"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Conversation store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "convId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation deleted via life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Conversation store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/stats": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "RAG stats proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "chunks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "vectors": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "documents",
+                    "chunks",
+                    "vectors"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "required": false,
+            "name": "top_k",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "mode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "collections",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RAG search results proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "collections": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "content": {
+                            "type": "string"
+                          },
+                          "document_id": {
+                            "type": "string"
+                          },
+                          "chunk_index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "nullable": true
+                            }
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "dense_score": {
+                            "type": "number"
+                          },
+                          "sparse_score": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "content",
+                          "document_id",
+                          "chunk_index",
+                          "score",
+                          "dense_score",
+                          "sparse_score"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "mode",
+                    "collections",
+                    "results"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid RAG search query or mode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "required": false,
+            "name": "top_k",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "collections",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semantic search proxied from life-core RAG",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "collections": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "content": {
+                            "type": "string"
+                          },
+                          "document_id": {
+                            "type": "string"
+                          },
+                          "chunk_index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "nullable": true
+                            }
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "dense_score": {
+                            "type": "number"
+                          },
+                          "sparse_score": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "content",
+                          "document_id",
+                          "chunk_index",
+                          "score",
+                          "dense_score",
+                          "sparse_score"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "query",
+                    "mode",
+                    "collections",
+                    "results"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid semantic search query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/documents": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Indexed RAG documents proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "chunks": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "nullable": true
+                            },
+                            "default": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "chunks"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "documents"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Uploaded RAG document indexed by life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "chunks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      },
+                      "default": {}
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "chunks"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/documents/{id}": {
+      "delete": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RAG document deleted via life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deleted",
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RAG document not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "RAG pipeline unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{convId}/messages": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "convId",
+            "in": "path"
+          }
         ],
         "requestBody": {
           "required": true,
@@ -283,37 +2042,16 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "messages": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "role": {
-                          "type": "string",
-                          "enum": [
-                            "user",
-                            "assistant",
-                            "system"
-                          ]
-                        },
-                        "content": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "role",
-                        "content"
-                      ]
-                    }
+                  "role": {
+                    "type": "string"
                   },
-                  "model": {
-                    "type": "string",
-                    "default": "claude-3-5-sonnet-20241022"
+                  "content": {
+                    "type": "string"
                   }
                 },
                 "required": [
-                  "messages"
+                  "role",
+                  "content"
                 ]
               }
             }
@@ -321,27 +2059,76 @@
         },
         "responses": {
           "200": {
-            "description": "Bootstrap chat response",
+            "description": "Message added to a conversation via life-core",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "content": {
+                    "status": {
                       "type": "string"
                     },
-                    "model": {
-                      "type": "string"
-                    },
-                    "provider": {
-                      "type": "string",
-                      "default": "bootstrap"
+                    "message_count": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
                   "required": [
-                    "content",
-                    "model",
-                    "provider"
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conversation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Conversation store unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "detail"
                   ]
                 }
               }
@@ -349,83 +2136,1145 @@
           }
         }
       }
-    }
-  },
-  "components": {
-    "schemas": {
-      "Message": {
-        "type": "object",
-        "properties": {
-          "role": {
-            "type": "string",
-            "enum": [
-              "user",
-              "assistant",
-              "system"
-            ]
+    },
+    "/api/audit/status": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Governance audit status proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "no_report"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "last_run": {
+                          "type": "string"
+                        },
+                        "total_audits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "pass": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "warn": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "fail": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "avg_score": {
+                          "type": "number"
+                        },
+                        "ai_score_avg": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "last_run",
+                        "total_audits"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
           },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "role",
-          "content"
-        ]
-      },
-      "ChatRequest": {
-        "type": "object",
-        "properties": {
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Message"
-            },
-            "minItems": 1
-          },
-          "model": {
-            "type": "string"
-          },
-          "provider": {
-            "type": "string"
-          },
-          "useRag": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "messages"
-        ]
-      },
-      "ChatResponse": {
-        "type": "object",
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "model": {
-            "type": "string"
-          },
-          "provider": {
-            "type": "string"
-          },
-          "usage": {
-            "type": "object",
-            "properties": {
-              "inputTokens": {
-                "type": "number"
-              },
-              "outputTokens": {
-                "type": "number"
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
               }
             }
           }
-        },
-        "required": [
-          "content",
-          "model",
-          "provider"
-        ]
+        }
+      }
+    },
+    "/api/audit/report": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Governance audit report proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "no_report"
+                          ]
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "filepath": {
+                                "type": "string"
+                              },
+                              "file": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pass",
+                                  "warn",
+                                  "fail"
+                                ]
+                              },
+                              "errors": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "warnings": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "last_modified": {
+                                "type": "string"
+                              },
+                              "details": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "check": {
+                                      "type": "string"
+                                    },
+                                    "severity": {
+                                      "type": "string",
+                                      "enum": [
+                                        "error",
+                                        "warning",
+                                        "info"
+                                      ]
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "auto_fixable": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "check",
+                                    "severity",
+                                    "message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "results"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "timestamp": {
+                          "type": "string"
+                        },
+                        "total_files": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "pass": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "warn": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "fail": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "filepath": {
+                                "type": "string"
+                              },
+                              "file": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "enum": [
+                                  "pass",
+                                  "warn",
+                                  "fail"
+                                ]
+                              },
+                              "errors": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "warnings": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "score": {
+                                "type": "number"
+                              },
+                              "last_modified": {
+                                "type": "string"
+                              },
+                              "details": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "check": {
+                                      "type": "string"
+                                    },
+                                    "severity": {
+                                      "type": "string",
+                                      "enum": [
+                                        "error",
+                                        "warning",
+                                        "info"
+                                      ]
+                                    },
+                                    "message": {
+                                      "type": "string"
+                                    },
+                                    "auto_fixable": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "check",
+                                    "severity",
+                                    "message"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "status"
+                            ]
+                          }
+                        },
+                        "cross_analysis": {
+                          "type": "object",
+                          "properties": {
+                            "contradictions": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "untracked_debts": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "coverage_gaps": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "contradictions",
+                            "untracked_debts",
+                            "coverage_gaps"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "results"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/traces/services": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Available traced services proxied from Jaeger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/traces/recent": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "service",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent Jaeger traces proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "traceID": {
+                            "type": "string"
+                          },
+                          "operationName": {
+                            "type": "string"
+                          },
+                          "startTime": {
+                            "type": "number"
+                          },
+                          "duration": {
+                            "type": "number"
+                          },
+                          "serviceName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "statusCode": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          },
+                          "spans": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "traceID": {
+                                  "type": "string"
+                                },
+                                "spanID": {
+                                  "type": "string"
+                                },
+                                "operationName": {
+                                  "type": "string"
+                                },
+                                "startTime": {
+                                  "type": "number"
+                                },
+                                "duration": {
+                                  "type": "number"
+                                },
+                                "processID": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": {
+                                "nullable": true
+                              }
+                            }
+                          },
+                          "processes": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "properties": {
+                                "serviceName": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": {
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": {
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/containers": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Container health and resource usage proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "containers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "image": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "health": {
+                            "type": "string"
+                          },
+                          "cpu_percent": {
+                            "type": "number"
+                          },
+                          "memory_mb": {
+                            "type": "number"
+                          },
+                          "memory_limit_mb": {
+                            "type": "number"
+                          },
+                          "uptime_hours": {
+                            "type": "number"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "image",
+                          "status",
+                          "health",
+                          "cpu_percent",
+                          "memory_mb",
+                          "memory_limit_mb",
+                          "uptime_hours"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "containers"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/storage": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Storage backend status proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "redis": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "used_memory_human": {
+                          "type": "string"
+                        },
+                        "connected_clients": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "keys": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "collections": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "collection_names": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "code": {
+                          "type": "integer"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    },
+                    "qdrant": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "used_memory_human": {
+                          "type": "string"
+                        },
+                        "connected_clients": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "keys": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "collections": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "collection_names": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "code": {
+                          "type": "integer"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "redis",
+                    "qdrant"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/network": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Network connectivity checks proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ollama_local": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "models": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    },
+                    "ollama_gpu": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "models": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    },
+                    "vllm_gpu": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "models": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    },
+                    "jaeger": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string"
+                        },
+                        "models": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          ]
+                        },
+                        "url": {
+                          "type": "string"
+                        },
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "additionalProperties": {
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/machines": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Per-machine monitoring proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "machines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "ip": {
+                            "type": "string"
+                          },
+                          "cpu_percent": {
+                            "type": "number"
+                          },
+                          "ram_used_gb": {
+                            "type": "number"
+                          },
+                          "ram_total_gb": {
+                            "type": "number"
+                          },
+                          "disk_used_gb": {
+                            "type": "number"
+                          },
+                          "disk_total_gb": {
+                            "type": "number"
+                          },
+                          "uptime_hours": {
+                            "type": "number"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "ip",
+                          "cpu_percent",
+                          "ram_used_gb",
+                          "ram_total_gb",
+                          "disk_used_gb",
+                          "disk_total_gb",
+                          "uptime_hours"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "machines"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/gpu": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "GPU monitoring proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "model": {
+                      "type": "string"
+                    },
+                    "vram_used_gb": {
+                      "type": "number"
+                    },
+                    "vram_total_gb": {
+                      "type": "number"
+                    },
+                    "requests_active": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "tokens_per_sec": {
+                      "type": "number"
+                    },
+                    "kv_cache_usage_percent": {
+                      "type": "number"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "model",
+                    "vram_used_gb",
+                    "vram_total_gb",
+                    "requests_active",
+                    "tokens_per_sec",
+                    "kv_cache_usage_percent"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/infra/activepieces": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Activepieces flow monitoring proxied from life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "flows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "trigger": {
+                            "type": "string"
+                          },
+                          "last_run_at": {
+                            "type": "string"
+                          },
+                          "last_run_status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "status",
+                          "trigger",
+                          "last_run_at",
+                          "last_run_status"
+                        ]
+                      }
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "flows"
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Proxy error while calling life-core",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     }
   }

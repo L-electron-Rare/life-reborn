@@ -5,6 +5,7 @@ const HealthResponseSchema = z.object({
   status: z.string().openapi({ example: "ok" }),
   core: z.string().openapi({ example: "ok" }),
   providers: z.array(z.string()).default([]),
+  backends: z.array(z.string()).default([]),
   cache_available: z.boolean().default(false),
 });
 
@@ -39,6 +40,7 @@ export function registerHealthRoute(app: OpenAPIHono): void {
         status: "ok",
         core: core.status,
         providers: core.providers ?? [],
+        backends: core.backends ?? [],
         cache_available: core.cache_available ?? false,
       }, 200);
     } catch {
@@ -46,6 +48,7 @@ export function registerHealthRoute(app: OpenAPIHono): void {
         status: "degraded",
         core: "unreachable",
         providers: [],
+        backends: [],
         cache_available: false,
       }, 503);
     }

@@ -3,7 +3,7 @@
  */
 
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { fetchCore } from "../client/core.js";
+import { buildForwardHeaders, fetchCore } from "../client/core.js";
 
 const ChatRequestSchema = z.object({
   messages: z.array(z.object({
@@ -72,13 +72,14 @@ interface LifeCoreResponse {
 export function registerChatRouteV2(app: OpenAPIHono): void {
   app.openapi(chatRoute, async (c) => {
     const payload = c.req.valid("json");
+    const { headers, correlationId } = buildForwardHeaders(c.req.raw, {
+      "Content-Type": "application/json",
+    });
     
     try {
       const response = await fetchCore("/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           messages: payload.messages,
           model: payload.model,
@@ -92,7 +93,8 @@ export function registerChatRouteV2(app: OpenAPIHono): void {
         console.error(`life-core error: ${response.status} - ${error}`);
         return c.json(
           { error: `life-core API error: ${response.status}` },
-          500
+          500,
+          { "X-Correlation-ID": correlationId },
         );
       }
       
@@ -106,14 +108,16 @@ export function registerChatRouteV2(app: OpenAPIHono): void {
           usage: data.usage,
           trace_id: data.trace_id,
         },
-        200
+        200,
+        { "X-Correlation-ID": correlationId },
       );
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       return c.json(
         { error: `Failed to call life-core: ${errorMessage}` },
-        500
+        500,
+        { "X-Correlation-ID": correlationId },
       );
     }
   });

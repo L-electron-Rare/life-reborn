@@ -3,134 +3,860 @@
  * Do not edit manually.
  * life-reborn API
  * Gateway API for life-reborn service, bridging to life-core backend
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 0.1.0
  */
-export type MessageRole = typeof MessageRole[keyof typeof MessageRole];
-
-
-export const MessageRole = {
-  user: 'user',
-  assistant: 'assistant',
-  system: 'system',
-} as const;
-
-export interface Message {
-  role: MessageRole;
-  content: string;
-}
-
-export interface ChatRequest {
-  /** @minItems 1 */
-  messages: Message[];
-  model?: string;
-  provider?: string;
-  useRag?: boolean;
-}
-
-export type ChatResponseUsage = {
-  inputTokens?: number;
-  outputTokens?: number;
-};
-
-export interface ChatResponse {
-  content: string;
-  model: string;
-  provider: string;
-  usage?: ChatResponseUsage;
-}
-
 export type GetHealth200 = {
   status: string;
   core: string;
+  providers?: string[];
+  backends?: string[];
+  cache_available?: boolean;
 };
 
 export type GetHealth503 = {
-  status?: string;
-  core?: string;
+  status: string;
+  core: string;
+  providers?: string[];
+  backends?: string[];
+  cache_available?: boolean;
 };
 
-export type GetVersion200 = {
+export type GetApiVersion200 = {
+  service: string;
   version: string;
-  name: string;
 };
 
-export type GetProviders200ProvidersItem = {
-  name?: string;
-  available?: boolean;
-  models?: string[];
+export type GetApiProviders200 = {
+  providers: string[];
 };
 
-export type GetProviders200 = {
-  providers?: GetProviders200ProvidersItem[];
-};
-
-export type ChatBodyMessagesItemRole = typeof ChatBodyMessagesItemRole[keyof typeof ChatBodyMessagesItemRole];
+export type PostApiV1ChatBodyMessagesItemRole = typeof PostApiV1ChatBodyMessagesItemRole[keyof typeof PostApiV1ChatBodyMessagesItemRole];
 
 
-export const ChatBodyMessagesItemRole = {
+export const PostApiV1ChatBodyMessagesItemRole = {
   user: 'user',
   assistant: 'assistant',
   system: 'system',
 } as const;
 
-export type ChatBodyMessagesItem = {
-  role: ChatBodyMessagesItemRole;
+export type PostApiV1ChatBodyMessagesItem = {
+  role: PostApiV1ChatBodyMessagesItemRole;
   content: string;
 };
 
-export type ChatBody = {
+export type PostApiV1ChatBody = {
   /** @minItems 1 */
-  messages: ChatBodyMessagesItem[];
+  messages: PostApiV1ChatBodyMessagesItem[];
   model?: string;
   provider?: string;
   useRag?: boolean;
 };
 
-export type Chat200Usage = {
-  inputTokens?: number;
-  outputTokens?: number;
+export type PostApiV1Chat200Usage = {
+  input_tokens?: number;
+  output_tokens?: number;
 };
 
-export type Chat200 = {
+export type PostApiV1Chat200 = {
   content: string;
   model: string;
   provider: string;
-  usage?: Chat200Usage;
+  usage?: PostApiV1Chat200Usage;
+  trace_id?: string;
 };
 
-export type Chat500 = {
-  error?: string;
-};
-
-export type ChatV1BodyMessagesItemRole = typeof ChatV1BodyMessagesItemRole[keyof typeof ChatV1BodyMessagesItemRole];
+export type PostApiChatBodyMessagesItemRole = typeof PostApiChatBodyMessagesItemRole[keyof typeof PostApiChatBodyMessagesItemRole];
 
 
-export const ChatV1BodyMessagesItemRole = {
+export const PostApiChatBodyMessagesItemRole = {
   user: 'user',
   assistant: 'assistant',
   system: 'system',
 } as const;
 
-export type ChatV1BodyMessagesItem = {
-  role: ChatV1BodyMessagesItemRole;
+export type PostApiChatBodyMessagesItem = {
+  role: PostApiChatBodyMessagesItemRole;
   content: string;
 };
 
-export type ChatV1Body = {
+export type PostApiChatBody = {
   /** @minItems 1 */
-  messages: ChatV1BodyMessagesItem[];
+  messages: PostApiChatBodyMessagesItem[];
   model?: string;
+  provider?: string;
+  useRag?: boolean;
 };
 
-export type ChatV1200 = {
+export type PostApiChat200Usage = {
+  input_tokens?: number;
+  output_tokens?: number;
+};
+
+export type PostApiChat200 = {
   content: string;
   model: string;
   provider: string;
+  usage?: PostApiChat200Usage;
+  trace_id?: string;
+};
+
+export type PostApiChat500 = {
+  error: string;
+};
+
+export type PostApiBrowserScrapeBody = {
+  url: string;
+  /** @nullable */
+  selector?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 120000
+     */
+  timeoutMs?: number;
+};
+
+export type PostApiBrowserScrape200 = {
+  url: string;
+  title: string;
+  content: string;
+};
+
+export type PostApiBrowserScrape500 = {
+  error: string;
+};
+
+export type GetModels200 = {
+  models: string[];
+};
+
+export type GetModels502 = {
+  error: string;
+};
+
+export type GetModelsCatalog200ModelsItem = {
+  id: string;
+  name: string;
+  provider: string;
+  domain: string;
+  description: string;
+  size: string;
+  location: string;
+  context_window?: string;
+};
+
+export type GetModelsCatalog200Domains = {[key: string]: string};
+
+export type GetModelsCatalog200 = {
+  models: GetModelsCatalog200ModelsItem[];
+  domains: GetModelsCatalog200Domains;
+};
+
+export type GetModelsCatalog502 = {
+  error: string;
+};
+
+export type GetStats200ChatServiceCacheStatsL1 = {
+  /** @minimum 0 */
+  hits: number;
+  /** @minimum 0 */
+  misses: number;
+  /** @minimum 0 */
+  size: number;
+  /** @minimum 0 */
+  max_size: number;
+};
+
+export type GetStats200ChatServiceCacheStatsL2 = {
+  /** @minimum 0 */
+  hits: number;
+  /** @minimum 0 */
+  misses: number;
+  available: boolean;
+};
+
+export type GetStats200ChatServiceCacheStats = {
+  l1: GetStats200ChatServiceCacheStatsL1;
+  l2: GetStats200ChatServiceCacheStatsL2;
 };
 
 /**
- * @summary Health check
+ * @nullable
  */
+export type GetStats200ChatServiceRagStats = {
+  /** @minimum 0 */
+  documents?: number;
+  /** @minimum 0 */
+  chunks?: number;
+  /** @minimum 0 */
+  vectors: number;
+  retrieval_mode?: string;
+} | null;
+
+export type GetStats200ChatService = {
+  /** @minimum 0 */
+  requests: number;
+  /** @minimum 0 */
+  cache_hits: number;
+  cache_stats: GetStats200ChatServiceCacheStats;
+  /** @nullable */
+  rag_stats?: GetStats200ChatServiceRagStats;
+};
+
+export type GetStats200RouterStatus = {[key: string]: boolean};
+
+export type GetStats200Router = {
+  status: GetStats200RouterStatus;
+};
+
+export type GetStats200 = {
+  chat_service: GetStats200ChatService;
+  router: GetStats200Router;
+};
+
+export type GetStats502 = {
+  error: string;
+};
+
+export type GetStatsTimeseriesParams = {
+/**
+ * @minimum 1
+ * @maximum 60
+ */
+points?: number;
+};
+
+export type GetStatsTimeseries200SeriesItem = {
+  time: string;
+  timestamp: number;
+  p50: number;
+  p99: number;
+  /** @minimum 0 */
+  calls: number;
+  /** @minimum 0 */
+  errors: number;
+};
+
+export type GetStatsTimeseries200Summary = {
+  /** @minimum 0 */
+  total_calls: number;
+  /** @minimum 0 */
+  total_errors: number;
+  p50_ms: number;
+  p99_ms: number;
+  error_rate: number;
+};
+
+export type GetStatsTimeseries200 = {
+  series: GetStatsTimeseries200SeriesItem[];
+  summary: GetStatsTimeseries200Summary;
+};
+
+export type GetStatsTimeseries502 = {
+  error: string;
+};
+
+export type GetLogsRecentParams = {
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+};
+
+export type GetLogsRecent200LogsItem = {
+  timestamp: string;
+  level: string;
+  message: string;
+  source: string;
+};
+
+export type GetLogsRecent200 = {
+  logs: GetLogsRecent200LogsItem[];
+  /** @minimum 0 */
+  total: number;
+};
+
+export type GetLogsRecent502 = {
+  error: string;
+};
+
+export type GetConversations200ConversationsItem = {
+  id: string;
+  title: string;
+  created_at: string;
+  provider: string;
+  /** @minimum 0 */
+  message_count: number;
+};
+
+export type GetConversations200 = {
+  conversations: GetConversations200ConversationsItem[];
+};
+
+export type GetConversations502 = {
+  error: string;
+};
+
+export type GetConversations503 = {
+  detail: string;
+};
+
+export type PostConversationsBody = {
+  title?: string;
+  provider?: string;
+};
+
+export type PostConversations200MessagesItem = {
+  role: string;
+  content: string;
+};
+
+export type PostConversations200 = {
+  id: string;
+  title: string;
+  provider: string;
+  messages: PostConversations200MessagesItem[];
+  created_at: string;
+};
+
+export type PostConversations502 = {
+  error: string;
+};
+
+export type PostConversations503 = {
+  detail: string;
+};
+
+export type GetConversationsConvId200MessagesItem = {
+  role: string;
+  content: string;
+};
+
+export type GetConversationsConvId200 = {
+  id: string;
+  title: string;
+  provider: string;
+  messages: GetConversationsConvId200MessagesItem[];
+  created_at: string;
+};
+
+export type GetConversationsConvId404 = {
+  detail: string;
+};
+
+export type GetConversationsConvId502 = {
+  error: string;
+};
+
+export type GetConversationsConvId503 = {
+  detail: string;
+};
+
+export type DeleteConversationsConvId200 = {
+  status: string;
+};
+
+export type DeleteConversationsConvId404 = {
+  detail: string;
+};
+
+export type DeleteConversationsConvId502 = {
+  error: string;
+};
+
+export type DeleteConversationsConvId503 = {
+  detail: string;
+};
+
+export type GetRagStats200 = {
+  /** @minimum 0 */
+  documents: number;
+  /** @minimum 0 */
+  chunks: number;
+  /** @minimum 0 */
+  vectors: number;
+};
+
+export type GetRagStats502 = {
+  error: string;
+};
+
+export type GetRagStats503 = {
+  detail: string;
+};
+
+export type GetRagSearchParams = {
+/**
+ * @minLength 1
+ */
+q: string;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+top_k?: number;
+mode?: string;
+collections?: string;
+};
+
+export type GetRagSearch200ResultsItemMetadata = {[key: string]: unknown | null};
+
+export type GetRagSearch200ResultsItem = {
+  content: string;
+  document_id: string;
+  /** @minimum 0 */
+  chunk_index: number;
+  metadata?: GetRagSearch200ResultsItemMetadata;
+  score: number;
+  dense_score: number;
+  sparse_score: number;
+};
+
+export type GetRagSearch200 = {
+  query: string;
+  mode: string;
+  collections: string[];
+  results: GetRagSearch200ResultsItem[];
+};
+
+export type GetRagSearch400 = {
+  detail: string;
+};
+
+export type GetRagSearch502 = {
+  error: string;
+};
+
+export type GetRagSearch503 = {
+  detail: string;
+};
+
+export type GetApiSearchParams = {
+/**
+ * @minLength 1
+ */
+q: string;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+top_k?: number;
+collections?: string;
+};
+
+export type GetApiSearch200ResultsItemMetadata = {[key: string]: unknown | null};
+
+export type GetApiSearch200ResultsItem = {
+  content: string;
+  document_id: string;
+  /** @minimum 0 */
+  chunk_index: number;
+  metadata?: GetApiSearch200ResultsItemMetadata;
+  score: number;
+  dense_score: number;
+  sparse_score: number;
+};
+
+export type GetApiSearch200 = {
+  query: string;
+  mode: string;
+  collections: string[];
+  results: GetApiSearch200ResultsItem[];
+};
+
+export type GetApiSearch400 = {
+  detail: string;
+};
+
+export type GetApiSearch502 = {
+  error: string;
+};
+
+export type GetApiSearch503 = {
+  detail: string;
+};
+
+export type GetRagDocuments200DocumentsItemMetadata = {[key: string]: unknown | null};
+
+export type GetRagDocuments200DocumentsItem = {
+  id: string;
+  name: string;
+  /** @minimum 0 */
+  chunks: number;
+  metadata?: GetRagDocuments200DocumentsItemMetadata;
+};
+
+export type GetRagDocuments200 = {
+  documents: GetRagDocuments200DocumentsItem[];
+};
+
+export type GetRagDocuments502 = {
+  error: string;
+};
+
+export type GetRagDocuments503 = {
+  detail: string;
+};
+
+export type PostRagDocumentsBody = {
+  file: Blob;
+};
+
+export type PostRagDocuments200Metadata = {[key: string]: unknown | null};
+
+export type PostRagDocuments200 = {
+  id: string;
+  name: string;
+  /** @minimum 0 */
+  chunks: number;
+  metadata?: PostRagDocuments200Metadata;
+};
+
+export type PostRagDocuments502 = {
+  error: string;
+};
+
+export type PostRagDocuments503 = {
+  detail: string;
+};
+
+export type DeleteRagDocumentsId200 = {
+  deleted: boolean;
+  id: string;
+};
+
+export type DeleteRagDocumentsId404 = {
+  detail: string;
+};
+
+export type DeleteRagDocumentsId502 = {
+  error: string;
+};
+
+export type DeleteRagDocumentsId503 = {
+  detail: string;
+};
+
+export type PostConversationsConvIdMessagesBody = {
+  role: string;
+  content: string;
+};
+
+export type PostConversationsConvIdMessages200 = {
+  status: string;
+  /** @minimum 0 */
+  message_count?: number;
+};
+
+export type PostConversationsConvIdMessages404 = {
+  detail: string;
+};
+
+export type PostConversationsConvIdMessages502 = {
+  error: string;
+};
+
+export type PostConversationsConvIdMessages503 = {
+  detail: string;
+};
+
+export type GetApiAuditStatus200 = {
+  status: 'no_report';
+  message: string;
+} | {
+  last_run: string;
+  /** @minimum 0 */
+  total_audits: number;
+  /** @minimum 0 */
+  pass?: number;
+  /** @minimum 0 */
+  warn?: number;
+  /** @minimum 0 */
+  fail?: number;
+  avg_score?: number;
+  ai_score_avg?: number;
+};
+
+export type GetApiAuditStatus502 = {
+  error: string;
+};
+
+export type GetApiAuditReport200 = {
+  status: 'no_report';
+  results: ({
+  filepath?: string;
+  file?: string;
+  status: 'pass' | 'warn' | 'fail';
+  /** @minimum 0 */
+  errors?: number;
+  /** @minimum 0 */
+  warnings?: number;
+  score?: number;
+  last_modified?: string;
+  details?: ({
+  check: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  auto_fixable?: boolean;
+})[];
+})[];
+} | {
+  timestamp?: string;
+  /** @minimum 0 */
+  total_files?: number;
+  summary?: {
+  /** @minimum 0 */
+  pass?: number;
+  /** @minimum 0 */
+  warn?: number;
+  /** @minimum 0 */
+  fail?: number;
+};
+  results: ({
+  filepath?: string;
+  file?: string;
+  status: 'pass' | 'warn' | 'fail';
+  /** @minimum 0 */
+  errors?: number;
+  /** @minimum 0 */
+  warnings?: number;
+  score?: number;
+  last_modified?: string;
+  details?: ({
+  check: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  auto_fixable?: boolean;
+})[];
+})[];
+  cross_analysis?: {
+  contradictions: string[];
+  untracked_debts: string[];
+  coverage_gaps: string[];
+};
+};
+
+export type GetApiAuditReport502 = {
+  error: string;
+};
+
+export type GetTracesServices200 = {
+  data: string[];
+  error?: string;
+};
+
+export type GetTracesServices502 = {
+  error: string;
+};
+
+export type GetTracesRecentParams = {
+service?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type GetTracesRecent200DataItemSpansItem = {
+  traceID?: string;
+  spanID?: string;
+  operationName?: string;
+  startTime?: number;
+  duration?: number;
+  processID?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetTracesRecent200DataItemProcesses = {[key: string]: {
+  serviceName?: string;
+  [key: string]: unknown | null;
+}};
+
+export type GetTracesRecent200DataItem = {
+  traceID?: string;
+  operationName?: string;
+  startTime?: number;
+  duration?: number;
+  serviceName?: string;
+  status?: string;
+  statusCode?: string | number;
+  spans?: GetTracesRecent200DataItemSpansItem[];
+  processes?: GetTracesRecent200DataItemProcesses;
+  [key: string]: unknown | null;
+};
+
+export type GetTracesRecent200 = {
+  data: GetTracesRecent200DataItem[];
+  /** @minimum 0 */
+  total?: number;
+  /** @minimum 0 */
+  limit?: number;
+  /** @minimum 0 */
+  offset?: number;
+  error?: string;
+};
+
+export type GetTracesRecent502 = {
+  error: string;
+};
+
+export type GetInfraContainers200ContainersItem = {
+  name: string;
+  image: string;
+  status: string;
+  health: string;
+  cpu_percent: number;
+  memory_mb: number;
+  memory_limit_mb: number;
+  uptime_hours: number;
+  error?: string;
+};
+
+export type GetInfraContainers200 = {
+  containers: GetInfraContainers200ContainersItem[];
+};
+
+export type GetInfraContainers502 = {
+  error: string;
+};
+
+export type GetInfraStorage200Redis = {
+  status?: string;
+  used_memory_human?: string;
+  /** @minimum 0 */
+  connected_clients?: number;
+  /** @minimum 0 */
+  keys?: number;
+  /** @minimum 0 */
+  collections?: number;
+  collection_names?: string[];
+  code?: number;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraStorage200Qdrant = {
+  status?: string;
+  used_memory_human?: string;
+  /** @minimum 0 */
+  connected_clients?: number;
+  /** @minimum 0 */
+  keys?: number;
+  /** @minimum 0 */
+  collections?: number;
+  collection_names?: string[];
+  code?: number;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraStorage200 = {
+  redis: GetInfraStorage200Redis;
+  qdrant: GetInfraStorage200Qdrant;
+};
+
+export type GetInfraStorage502 = {
+  error: string;
+};
+
+export type GetInfraNetwork200OllamaLocal = {
+  status: string;
+  models?: number | string[];
+  url?: string;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraNetwork200OllamaGpu = {
+  status: string;
+  models?: number | string[];
+  url?: string;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraNetwork200VllmGpu = {
+  status: string;
+  models?: number | string[];
+  url?: string;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraNetwork200Jaeger = {
+  status: string;
+  models?: number | string[];
+  url?: string;
+  error?: string;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraNetwork200 = {
+  ollama_local?: GetInfraNetwork200OllamaLocal;
+  ollama_gpu?: GetInfraNetwork200OllamaGpu;
+  vllm_gpu?: GetInfraNetwork200VllmGpu;
+  jaeger?: GetInfraNetwork200Jaeger;
+  [key: string]: unknown | null;
+};
+
+export type GetInfraNetwork502 = {
+  error: string;
+};
+
+export type GetInfraMachines200MachinesItem = {
+  name: string;
+  ip: string;
+  cpu_percent: number;
+  ram_used_gb: number;
+  ram_total_gb: number;
+  disk_used_gb: number;
+  disk_total_gb: number;
+  uptime_hours: number;
+  error?: string;
+};
+
+export type GetInfraMachines200 = {
+  machines: GetInfraMachines200MachinesItem[];
+};
+
+export type GetInfraMachines502 = {
+  error: string;
+};
+
+export type GetInfraGpu200 = {
+  model: string;
+  vram_used_gb: number;
+  vram_total_gb: number;
+  /** @minimum 0 */
+  requests_active: number;
+  tokens_per_sec: number;
+  kv_cache_usage_percent: number;
+  error?: string;
+};
+
+export type GetInfraGpu502 = {
+  error: string;
+};
+
+export type GetInfraActivepieces200FlowsItem = {
+  id: string;
+  name: string;
+  status: string;
+  trigger: string;
+  last_run_at: string;
+  last_run_status: string;
+};
+
+export type GetInfraActivepieces200 = {
+  flows: GetInfraActivepieces200FlowsItem[];
+  error?: string;
+};
+
+export type GetInfraActivepieces502 = {
+  error: string;
+};
+
 export type getHealthResponse200 = {
   data: GetHealth200
   status: 200
@@ -177,22 +903,19 @@ export const getHealth = async ( options?: RequestInit): Promise<getHealthRespon
 
 
 
-/**
- * @summary Get API version
- */
-export type getVersionResponse200 = {
-  data: GetVersion200
+export type getApiVersionResponse200 = {
+  data: GetApiVersion200
   status: 200
 }
 
-export type getVersionResponseSuccess = (getVersionResponse200) & {
+export type getApiVersionResponseSuccess = (getApiVersionResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getVersionResponse = (getVersionResponseSuccess)
+export type getApiVersionResponse = (getApiVersionResponseSuccess)
 
-export const getGetVersionUrl = () => {
+export const getGetApiVersionUrl = () => {
 
 
 
@@ -200,9 +923,9 @@ export const getGetVersionUrl = () => {
   return `http://localhost:3000/api/version`
 }
 
-export const getVersion = async ( options?: RequestInit): Promise<getVersionResponse> => {
+export const getApiVersion = async ( options?: RequestInit): Promise<getApiVersionResponse> => {
 
-  const res = await fetch(getGetVersionUrl(),
+  const res = await fetch(getGetApiVersionUrl(),
   {
     ...options,
     method: 'GET'
@@ -213,28 +936,25 @@ export const getVersion = async ( options?: RequestInit): Promise<getVersionResp
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getVersionResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getVersionResponse
+  const data: getApiVersionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiVersionResponse
 }
 
 
 
-/**
- * @summary Get available LLM providers
- */
-export type getProvidersResponse200 = {
-  data: GetProviders200
+export type getApiProvidersResponse200 = {
+  data: GetApiProviders200
   status: 200
 }
 
-export type getProvidersResponseSuccess = (getProvidersResponse200) & {
+export type getApiProvidersResponseSuccess = (getApiProvidersResponse200) & {
   headers: Headers;
 };
 ;
 
-export type getProvidersResponse = (getProvidersResponseSuccess)
+export type getApiProvidersResponse = (getApiProvidersResponseSuccess)
 
-export const getGetProvidersUrl = () => {
+export const getGetApiProvidersUrl = () => {
 
 
 
@@ -242,9 +962,9 @@ export const getGetProvidersUrl = () => {
   return `http://localhost:3000/api/providers`
 }
 
-export const getProviders = async ( options?: RequestInit): Promise<getProvidersResponse> => {
+export const getApiProviders = async ( options?: RequestInit): Promise<getApiProvidersResponse> => {
 
-  const res = await fetch(getGetProvidersUrl(),
+  const res = await fetch(getGetApiProvidersUrl(),
   {
     ...options,
     method: 'GET'
@@ -255,78 +975,25 @@ export const getProviders = async ( options?: RequestInit): Promise<getProviders
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getProvidersResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getProvidersResponse
+  const data: getApiProvidersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiProvidersResponse
 }
 
 
 
-/**
- * @summary Send message via life-core LLM router
- */
-export type chatResponse200 = {
-  data: Chat200
+export type postApiV1ChatResponse200 = {
+  data: PostApiV1Chat200
   status: 200
 }
 
-export type chatResponse500 = {
-  data: Chat500
-  status: 500
-}
-
-export type chatResponseSuccess = (chatResponse200) & {
-  headers: Headers;
-};
-export type chatResponseError = (chatResponse500) & {
-  headers: Headers;
-};
-
-export type chatResponse = (chatResponseSuccess | chatResponseError)
-
-export const getChatUrl = () => {
-
-
-
-
-  return `http://localhost:3000/api/chat`
-}
-
-export const chat = async (chatBody: ChatBody, options?: RequestInit): Promise<chatResponse> => {
-
-  const res = await fetch(getChatUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      chatBody,)
-  }
-)
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: chatResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as chatResponse
-}
-
-
-
-/**
- * @summary Bootstrap chat endpoint (fallback when life-core unavailable)
- */
-export type chatV1Response200 = {
-  data: ChatV1200
-  status: 200
-}
-
-export type chatV1ResponseSuccess = (chatV1Response200) & {
+export type postApiV1ChatResponseSuccess = (postApiV1ChatResponse200) & {
   headers: Headers;
 };
 ;
 
-export type chatV1Response = (chatV1ResponseSuccess)
+export type postApiV1ChatResponse = (postApiV1ChatResponseSuccess)
 
-export const getChatV1Url = () => {
+export const getPostApiV1ChatUrl = () => {
 
 
 
@@ -334,20 +1001,1436 @@ export const getChatV1Url = () => {
   return `http://localhost:3000/api/v1/chat`
 }
 
-export const chatV1 = async (chatV1Body: ChatV1Body, options?: RequestInit): Promise<chatV1Response> => {
+export const postApiV1Chat = async (postApiV1ChatBody: PostApiV1ChatBody, options?: RequestInit): Promise<postApiV1ChatResponse> => {
 
-  const res = await fetch(getChatV1Url(),
+  const res = await fetch(getPostApiV1ChatUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      chatV1Body,)
+      postApiV1ChatBody,)
   }
 )
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: chatV1Response['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as chatV1Response
+  const data: postApiV1ChatResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiV1ChatResponse
+}
+
+
+
+export type postApiChatResponse200 = {
+  data: PostApiChat200
+  status: 200
+}
+
+export type postApiChatResponse500 = {
+  data: PostApiChat500
+  status: 500
+}
+
+export type postApiChatResponseSuccess = (postApiChatResponse200) & {
+  headers: Headers;
+};
+export type postApiChatResponseError = (postApiChatResponse500) & {
+  headers: Headers;
+};
+
+export type postApiChatResponse = (postApiChatResponseSuccess | postApiChatResponseError)
+
+export const getPostApiChatUrl = () => {
+
+
+
+
+  return `http://localhost:3000/api/chat`
+}
+
+export const postApiChat = async (postApiChatBody: PostApiChatBody, options?: RequestInit): Promise<postApiChatResponse> => {
+
+  const res = await fetch(getPostApiChatUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postApiChatBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiChatResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiChatResponse
+}
+
+
+
+export type postApiBrowserScrapeResponse200 = {
+  data: PostApiBrowserScrape200
+  status: 200
+}
+
+export type postApiBrowserScrapeResponse500 = {
+  data: PostApiBrowserScrape500
+  status: 500
+}
+
+export type postApiBrowserScrapeResponseSuccess = (postApiBrowserScrapeResponse200) & {
+  headers: Headers;
+};
+export type postApiBrowserScrapeResponseError = (postApiBrowserScrapeResponse500) & {
+  headers: Headers;
+};
+
+export type postApiBrowserScrapeResponse = (postApiBrowserScrapeResponseSuccess | postApiBrowserScrapeResponseError)
+
+export const getPostApiBrowserScrapeUrl = () => {
+
+
+
+
+  return `http://localhost:3000/api/browser/scrape`
+}
+
+export const postApiBrowserScrape = async (postApiBrowserScrapeBody: PostApiBrowserScrapeBody, options?: RequestInit): Promise<postApiBrowserScrapeResponse> => {
+
+  const res = await fetch(getPostApiBrowserScrapeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postApiBrowserScrapeBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postApiBrowserScrapeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postApiBrowserScrapeResponse
+}
+
+
+
+export type getModelsResponse200 = {
+  data: GetModels200
+  status: 200
+}
+
+export type getModelsResponse502 = {
+  data: GetModels502
+  status: 502
+}
+
+export type getModelsResponseSuccess = (getModelsResponse200) & {
+  headers: Headers;
+};
+export type getModelsResponseError = (getModelsResponse502) & {
+  headers: Headers;
+};
+
+export type getModelsResponse = (getModelsResponseSuccess | getModelsResponseError)
+
+export const getGetModelsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/models`
+}
+
+export const getModels = async ( options?: RequestInit): Promise<getModelsResponse> => {
+
+  const res = await fetch(getGetModelsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getModelsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getModelsResponse
+}
+
+
+
+export type getModelsCatalogResponse200 = {
+  data: GetModelsCatalog200
+  status: 200
+}
+
+export type getModelsCatalogResponse502 = {
+  data: GetModelsCatalog502
+  status: 502
+}
+
+export type getModelsCatalogResponseSuccess = (getModelsCatalogResponse200) & {
+  headers: Headers;
+};
+export type getModelsCatalogResponseError = (getModelsCatalogResponse502) & {
+  headers: Headers;
+};
+
+export type getModelsCatalogResponse = (getModelsCatalogResponseSuccess | getModelsCatalogResponseError)
+
+export const getGetModelsCatalogUrl = () => {
+
+
+
+
+  return `http://localhost:3000/models/catalog`
+}
+
+export const getModelsCatalog = async ( options?: RequestInit): Promise<getModelsCatalogResponse> => {
+
+  const res = await fetch(getGetModelsCatalogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getModelsCatalogResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getModelsCatalogResponse
+}
+
+
+
+export type getStatsResponse200 = {
+  data: GetStats200
+  status: 200
+}
+
+export type getStatsResponse502 = {
+  data: GetStats502
+  status: 502
+}
+
+export type getStatsResponseSuccess = (getStatsResponse200) & {
+  headers: Headers;
+};
+export type getStatsResponseError = (getStatsResponse502) & {
+  headers: Headers;
+};
+
+export type getStatsResponse = (getStatsResponseSuccess | getStatsResponseError)
+
+export const getGetStatsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/stats`
+}
+
+export const getStats = async ( options?: RequestInit): Promise<getStatsResponse> => {
+
+  const res = await fetch(getGetStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStatsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getStatsResponse
+}
+
+
+
+export type getStatsTimeseriesResponse200 = {
+  data: GetStatsTimeseries200
+  status: 200
+}
+
+export type getStatsTimeseriesResponse502 = {
+  data: GetStatsTimeseries502
+  status: 502
+}
+
+export type getStatsTimeseriesResponseSuccess = (getStatsTimeseriesResponse200) & {
+  headers: Headers;
+};
+export type getStatsTimeseriesResponseError = (getStatsTimeseriesResponse502) & {
+  headers: Headers;
+};
+
+export type getStatsTimeseriesResponse = (getStatsTimeseriesResponseSuccess | getStatsTimeseriesResponseError)
+
+export const getGetStatsTimeseriesUrl = (params?: GetStatsTimeseriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://localhost:3000/stats/timeseries?${stringifiedParams}` : `http://localhost:3000/stats/timeseries`
+}
+
+export const getStatsTimeseries = async (params?: GetStatsTimeseriesParams, options?: RequestInit): Promise<getStatsTimeseriesResponse> => {
+
+  const res = await fetch(getGetStatsTimeseriesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getStatsTimeseriesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getStatsTimeseriesResponse
+}
+
+
+
+export type getLogsRecentResponse200 = {
+  data: GetLogsRecent200
+  status: 200
+}
+
+export type getLogsRecentResponse502 = {
+  data: GetLogsRecent502
+  status: 502
+}
+
+export type getLogsRecentResponseSuccess = (getLogsRecentResponse200) & {
+  headers: Headers;
+};
+export type getLogsRecentResponseError = (getLogsRecentResponse502) & {
+  headers: Headers;
+};
+
+export type getLogsRecentResponse = (getLogsRecentResponseSuccess | getLogsRecentResponseError)
+
+export const getGetLogsRecentUrl = (params?: GetLogsRecentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://localhost:3000/logs/recent?${stringifiedParams}` : `http://localhost:3000/logs/recent`
+}
+
+export const getLogsRecent = async (params?: GetLogsRecentParams, options?: RequestInit): Promise<getLogsRecentResponse> => {
+
+  const res = await fetch(getGetLogsRecentUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLogsRecentResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getLogsRecentResponse
+}
+
+
+
+export type getConversationsResponse200 = {
+  data: GetConversations200
+  status: 200
+}
+
+export type getConversationsResponse502 = {
+  data: GetConversations502
+  status: 502
+}
+
+export type getConversationsResponse503 = {
+  data: GetConversations503
+  status: 503
+}
+
+export type getConversationsResponseSuccess = (getConversationsResponse200) & {
+  headers: Headers;
+};
+export type getConversationsResponseError = (getConversationsResponse502 | getConversationsResponse503) & {
+  headers: Headers;
+};
+
+export type getConversationsResponse = (getConversationsResponseSuccess | getConversationsResponseError)
+
+export const getGetConversationsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/conversations`
+}
+
+export const getConversations = async ( options?: RequestInit): Promise<getConversationsResponse> => {
+
+  const res = await fetch(getGetConversationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getConversationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getConversationsResponse
+}
+
+
+
+export type postConversationsResponse200 = {
+  data: PostConversations200
+  status: 200
+}
+
+export type postConversationsResponse502 = {
+  data: PostConversations502
+  status: 502
+}
+
+export type postConversationsResponse503 = {
+  data: PostConversations503
+  status: 503
+}
+
+export type postConversationsResponseSuccess = (postConversationsResponse200) & {
+  headers: Headers;
+};
+export type postConversationsResponseError = (postConversationsResponse502 | postConversationsResponse503) & {
+  headers: Headers;
+};
+
+export type postConversationsResponse = (postConversationsResponseSuccess | postConversationsResponseError)
+
+export const getPostConversationsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/conversations`
+}
+
+export const postConversations = async (postConversationsBody: PostConversationsBody, options?: RequestInit): Promise<postConversationsResponse> => {
+
+  const res = await fetch(getPostConversationsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postConversationsBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postConversationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postConversationsResponse
+}
+
+
+
+export type getConversationsConvIdResponse200 = {
+  data: GetConversationsConvId200
+  status: 200
+}
+
+export type getConversationsConvIdResponse404 = {
+  data: GetConversationsConvId404
+  status: 404
+}
+
+export type getConversationsConvIdResponse502 = {
+  data: GetConversationsConvId502
+  status: 502
+}
+
+export type getConversationsConvIdResponse503 = {
+  data: GetConversationsConvId503
+  status: 503
+}
+
+export type getConversationsConvIdResponseSuccess = (getConversationsConvIdResponse200) & {
+  headers: Headers;
+};
+export type getConversationsConvIdResponseError = (getConversationsConvIdResponse404 | getConversationsConvIdResponse502 | getConversationsConvIdResponse503) & {
+  headers: Headers;
+};
+
+export type getConversationsConvIdResponse = (getConversationsConvIdResponseSuccess | getConversationsConvIdResponseError)
+
+export const getGetConversationsConvIdUrl = (convId: string,) => {
+
+
+
+
+  return `http://localhost:3000/conversations/${convId}`
+}
+
+export const getConversationsConvId = async (convId: string, options?: RequestInit): Promise<getConversationsConvIdResponse> => {
+
+  const res = await fetch(getGetConversationsConvIdUrl(convId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getConversationsConvIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getConversationsConvIdResponse
+}
+
+
+
+export type deleteConversationsConvIdResponse200 = {
+  data: DeleteConversationsConvId200
+  status: 200
+}
+
+export type deleteConversationsConvIdResponse404 = {
+  data: DeleteConversationsConvId404
+  status: 404
+}
+
+export type deleteConversationsConvIdResponse502 = {
+  data: DeleteConversationsConvId502
+  status: 502
+}
+
+export type deleteConversationsConvIdResponse503 = {
+  data: DeleteConversationsConvId503
+  status: 503
+}
+
+export type deleteConversationsConvIdResponseSuccess = (deleteConversationsConvIdResponse200) & {
+  headers: Headers;
+};
+export type deleteConversationsConvIdResponseError = (deleteConversationsConvIdResponse404 | deleteConversationsConvIdResponse502 | deleteConversationsConvIdResponse503) & {
+  headers: Headers;
+};
+
+export type deleteConversationsConvIdResponse = (deleteConversationsConvIdResponseSuccess | deleteConversationsConvIdResponseError)
+
+export const getDeleteConversationsConvIdUrl = (convId: string,) => {
+
+
+
+
+  return `http://localhost:3000/conversations/${convId}`
+}
+
+export const deleteConversationsConvId = async (convId: string, options?: RequestInit): Promise<deleteConversationsConvIdResponse> => {
+
+  const res = await fetch(getDeleteConversationsConvIdUrl(convId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteConversationsConvIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteConversationsConvIdResponse
+}
+
+
+
+export type getRagStatsResponse200 = {
+  data: GetRagStats200
+  status: 200
+}
+
+export type getRagStatsResponse502 = {
+  data: GetRagStats502
+  status: 502
+}
+
+export type getRagStatsResponse503 = {
+  data: GetRagStats503
+  status: 503
+}
+
+export type getRagStatsResponseSuccess = (getRagStatsResponse200) & {
+  headers: Headers;
+};
+export type getRagStatsResponseError = (getRagStatsResponse502 | getRagStatsResponse503) & {
+  headers: Headers;
+};
+
+export type getRagStatsResponse = (getRagStatsResponseSuccess | getRagStatsResponseError)
+
+export const getGetRagStatsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/rag/stats`
+}
+
+export const getRagStats = async ( options?: RequestInit): Promise<getRagStatsResponse> => {
+
+  const res = await fetch(getGetRagStatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRagStatsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getRagStatsResponse
+}
+
+
+
+export type getRagSearchResponse200 = {
+  data: GetRagSearch200
+  status: 200
+}
+
+export type getRagSearchResponse400 = {
+  data: GetRagSearch400
+  status: 400
+}
+
+export type getRagSearchResponse502 = {
+  data: GetRagSearch502
+  status: 502
+}
+
+export type getRagSearchResponse503 = {
+  data: GetRagSearch503
+  status: 503
+}
+
+export type getRagSearchResponseSuccess = (getRagSearchResponse200) & {
+  headers: Headers;
+};
+export type getRagSearchResponseError = (getRagSearchResponse400 | getRagSearchResponse502 | getRagSearchResponse503) & {
+  headers: Headers;
+};
+
+export type getRagSearchResponse = (getRagSearchResponseSuccess | getRagSearchResponseError)
+
+export const getGetRagSearchUrl = (params: GetRagSearchParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://localhost:3000/rag/search?${stringifiedParams}` : `http://localhost:3000/rag/search`
+}
+
+export const getRagSearch = async (params: GetRagSearchParams, options?: RequestInit): Promise<getRagSearchResponse> => {
+
+  const res = await fetch(getGetRagSearchUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRagSearchResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getRagSearchResponse
+}
+
+
+
+export type getApiSearchResponse200 = {
+  data: GetApiSearch200
+  status: 200
+}
+
+export type getApiSearchResponse400 = {
+  data: GetApiSearch400
+  status: 400
+}
+
+export type getApiSearchResponse502 = {
+  data: GetApiSearch502
+  status: 502
+}
+
+export type getApiSearchResponse503 = {
+  data: GetApiSearch503
+  status: 503
+}
+
+export type getApiSearchResponseSuccess = (getApiSearchResponse200) & {
+  headers: Headers;
+};
+export type getApiSearchResponseError = (getApiSearchResponse400 | getApiSearchResponse502 | getApiSearchResponse503) & {
+  headers: Headers;
+};
+
+export type getApiSearchResponse = (getApiSearchResponseSuccess | getApiSearchResponseError)
+
+export const getGetApiSearchUrl = (params: GetApiSearchParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://localhost:3000/api/search?${stringifiedParams}` : `http://localhost:3000/api/search`
+}
+
+export const getApiSearch = async (params: GetApiSearchParams, options?: RequestInit): Promise<getApiSearchResponse> => {
+
+  const res = await fetch(getGetApiSearchUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiSearchResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiSearchResponse
+}
+
+
+
+export type getRagDocumentsResponse200 = {
+  data: GetRagDocuments200
+  status: 200
+}
+
+export type getRagDocumentsResponse502 = {
+  data: GetRagDocuments502
+  status: 502
+}
+
+export type getRagDocumentsResponse503 = {
+  data: GetRagDocuments503
+  status: 503
+}
+
+export type getRagDocumentsResponseSuccess = (getRagDocumentsResponse200) & {
+  headers: Headers;
+};
+export type getRagDocumentsResponseError = (getRagDocumentsResponse502 | getRagDocumentsResponse503) & {
+  headers: Headers;
+};
+
+export type getRagDocumentsResponse = (getRagDocumentsResponseSuccess | getRagDocumentsResponseError)
+
+export const getGetRagDocumentsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/rag/documents`
+}
+
+export const getRagDocuments = async ( options?: RequestInit): Promise<getRagDocumentsResponse> => {
+
+  const res = await fetch(getGetRagDocumentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRagDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getRagDocumentsResponse
+}
+
+
+
+export type postRagDocumentsResponse200 = {
+  data: PostRagDocuments200
+  status: 200
+}
+
+export type postRagDocumentsResponse502 = {
+  data: PostRagDocuments502
+  status: 502
+}
+
+export type postRagDocumentsResponse503 = {
+  data: PostRagDocuments503
+  status: 503
+}
+
+export type postRagDocumentsResponseSuccess = (postRagDocumentsResponse200) & {
+  headers: Headers;
+};
+export type postRagDocumentsResponseError = (postRagDocumentsResponse502 | postRagDocumentsResponse503) & {
+  headers: Headers;
+};
+
+export type postRagDocumentsResponse = (postRagDocumentsResponseSuccess | postRagDocumentsResponseError)
+
+export const getPostRagDocumentsUrl = () => {
+
+
+
+
+  return `http://localhost:3000/rag/documents`
+}
+
+export const postRagDocuments = async (postRagDocumentsBody: PostRagDocumentsBody, options?: RequestInit): Promise<postRagDocumentsResponse> => {
+    const formData = new FormData();
+formData.append(`file`, postRagDocumentsBody.file);
+
+  const res = await fetch(getPostRagDocumentsUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postRagDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postRagDocumentsResponse
+}
+
+
+
+export type deleteRagDocumentsIdResponse200 = {
+  data: DeleteRagDocumentsId200
+  status: 200
+}
+
+export type deleteRagDocumentsIdResponse404 = {
+  data: DeleteRagDocumentsId404
+  status: 404
+}
+
+export type deleteRagDocumentsIdResponse502 = {
+  data: DeleteRagDocumentsId502
+  status: 502
+}
+
+export type deleteRagDocumentsIdResponse503 = {
+  data: DeleteRagDocumentsId503
+  status: 503
+}
+
+export type deleteRagDocumentsIdResponseSuccess = (deleteRagDocumentsIdResponse200) & {
+  headers: Headers;
+};
+export type deleteRagDocumentsIdResponseError = (deleteRagDocumentsIdResponse404 | deleteRagDocumentsIdResponse502 | deleteRagDocumentsIdResponse503) & {
+  headers: Headers;
+};
+
+export type deleteRagDocumentsIdResponse = (deleteRagDocumentsIdResponseSuccess | deleteRagDocumentsIdResponseError)
+
+export const getDeleteRagDocumentsIdUrl = (id: string,) => {
+
+
+
+
+  return `http://localhost:3000/rag/documents/${id}`
+}
+
+export const deleteRagDocumentsId = async (id: string, options?: RequestInit): Promise<deleteRagDocumentsIdResponse> => {
+
+  const res = await fetch(getDeleteRagDocumentsIdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteRagDocumentsIdResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as deleteRagDocumentsIdResponse
+}
+
+
+
+export type postConversationsConvIdMessagesResponse200 = {
+  data: PostConversationsConvIdMessages200
+  status: 200
+}
+
+export type postConversationsConvIdMessagesResponse404 = {
+  data: PostConversationsConvIdMessages404
+  status: 404
+}
+
+export type postConversationsConvIdMessagesResponse502 = {
+  data: PostConversationsConvIdMessages502
+  status: 502
+}
+
+export type postConversationsConvIdMessagesResponse503 = {
+  data: PostConversationsConvIdMessages503
+  status: 503
+}
+
+export type postConversationsConvIdMessagesResponseSuccess = (postConversationsConvIdMessagesResponse200) & {
+  headers: Headers;
+};
+export type postConversationsConvIdMessagesResponseError = (postConversationsConvIdMessagesResponse404 | postConversationsConvIdMessagesResponse502 | postConversationsConvIdMessagesResponse503) & {
+  headers: Headers;
+};
+
+export type postConversationsConvIdMessagesResponse = (postConversationsConvIdMessagesResponseSuccess | postConversationsConvIdMessagesResponseError)
+
+export const getPostConversationsConvIdMessagesUrl = (convId: string,) => {
+
+
+
+
+  return `http://localhost:3000/conversations/${convId}/messages`
+}
+
+export const postConversationsConvIdMessages = async (convId: string,
+    postConversationsConvIdMessagesBody: PostConversationsConvIdMessagesBody, options?: RequestInit): Promise<postConversationsConvIdMessagesResponse> => {
+
+  const res = await fetch(getPostConversationsConvIdMessagesUrl(convId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      postConversationsConvIdMessagesBody,)
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postConversationsConvIdMessagesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postConversationsConvIdMessagesResponse
+}
+
+
+
+export type getApiAuditStatusResponse200 = {
+  data: GetApiAuditStatus200
+  status: 200
+}
+
+export type getApiAuditStatusResponse502 = {
+  data: GetApiAuditStatus502
+  status: 502
+}
+
+export type getApiAuditStatusResponseSuccess = (getApiAuditStatusResponse200) & {
+  headers: Headers;
+};
+export type getApiAuditStatusResponseError = (getApiAuditStatusResponse502) & {
+  headers: Headers;
+};
+
+export type getApiAuditStatusResponse = (getApiAuditStatusResponseSuccess | getApiAuditStatusResponseError)
+
+export const getGetApiAuditStatusUrl = () => {
+
+
+
+
+  return `http://localhost:3000/api/audit/status`
+}
+
+export const getApiAuditStatus = async ( options?: RequestInit): Promise<getApiAuditStatusResponse> => {
+
+  const res = await fetch(getGetApiAuditStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAuditStatusResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAuditStatusResponse
+}
+
+
+
+export type getApiAuditReportResponse200 = {
+  data: GetApiAuditReport200
+  status: 200
+}
+
+export type getApiAuditReportResponse502 = {
+  data: GetApiAuditReport502
+  status: 502
+}
+
+export type getApiAuditReportResponseSuccess = (getApiAuditReportResponse200) & {
+  headers: Headers;
+};
+export type getApiAuditReportResponseError = (getApiAuditReportResponse502) & {
+  headers: Headers;
+};
+
+export type getApiAuditReportResponse = (getApiAuditReportResponseSuccess | getApiAuditReportResponseError)
+
+export const getGetApiAuditReportUrl = () => {
+
+
+
+
+  return `http://localhost:3000/api/audit/report`
+}
+
+export const getApiAuditReport = async ( options?: RequestInit): Promise<getApiAuditReportResponse> => {
+
+  const res = await fetch(getGetApiAuditReportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getApiAuditReportResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getApiAuditReportResponse
+}
+
+
+
+export type getTracesServicesResponse200 = {
+  data: GetTracesServices200
+  status: 200
+}
+
+export type getTracesServicesResponse502 = {
+  data: GetTracesServices502
+  status: 502
+}
+
+export type getTracesServicesResponseSuccess = (getTracesServicesResponse200) & {
+  headers: Headers;
+};
+export type getTracesServicesResponseError = (getTracesServicesResponse502) & {
+  headers: Headers;
+};
+
+export type getTracesServicesResponse = (getTracesServicesResponseSuccess | getTracesServicesResponseError)
+
+export const getGetTracesServicesUrl = () => {
+
+
+
+
+  return `http://localhost:3000/traces/services`
+}
+
+export const getTracesServices = async ( options?: RequestInit): Promise<getTracesServicesResponse> => {
+
+  const res = await fetch(getGetTracesServicesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTracesServicesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTracesServicesResponse
+}
+
+
+
+export type getTracesRecentResponse200 = {
+  data: GetTracesRecent200
+  status: 200
+}
+
+export type getTracesRecentResponse502 = {
+  data: GetTracesRecent502
+  status: 502
+}
+
+export type getTracesRecentResponseSuccess = (getTracesRecentResponse200) & {
+  headers: Headers;
+};
+export type getTracesRecentResponseError = (getTracesRecentResponse502) & {
+  headers: Headers;
+};
+
+export type getTracesRecentResponse = (getTracesRecentResponseSuccess | getTracesRecentResponseError)
+
+export const getGetTracesRecentUrl = (params?: GetTracesRecentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `http://localhost:3000/traces/recent?${stringifiedParams}` : `http://localhost:3000/traces/recent`
+}
+
+export const getTracesRecent = async (params?: GetTracesRecentParams, options?: RequestInit): Promise<getTracesRecentResponse> => {
+
+  const res = await fetch(getGetTracesRecentUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTracesRecentResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTracesRecentResponse
+}
+
+
+
+export type getInfraContainersResponse200 = {
+  data: GetInfraContainers200
+  status: 200
+}
+
+export type getInfraContainersResponse502 = {
+  data: GetInfraContainers502
+  status: 502
+}
+
+export type getInfraContainersResponseSuccess = (getInfraContainersResponse200) & {
+  headers: Headers;
+};
+export type getInfraContainersResponseError = (getInfraContainersResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraContainersResponse = (getInfraContainersResponseSuccess | getInfraContainersResponseError)
+
+export const getGetInfraContainersUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/containers`
+}
+
+export const getInfraContainers = async ( options?: RequestInit): Promise<getInfraContainersResponse> => {
+
+  const res = await fetch(getGetInfraContainersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraContainersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraContainersResponse
+}
+
+
+
+export type getInfraStorageResponse200 = {
+  data: GetInfraStorage200
+  status: 200
+}
+
+export type getInfraStorageResponse502 = {
+  data: GetInfraStorage502
+  status: 502
+}
+
+export type getInfraStorageResponseSuccess = (getInfraStorageResponse200) & {
+  headers: Headers;
+};
+export type getInfraStorageResponseError = (getInfraStorageResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraStorageResponse = (getInfraStorageResponseSuccess | getInfraStorageResponseError)
+
+export const getGetInfraStorageUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/storage`
+}
+
+export const getInfraStorage = async ( options?: RequestInit): Promise<getInfraStorageResponse> => {
+
+  const res = await fetch(getGetInfraStorageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraStorageResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraStorageResponse
+}
+
+
+
+export type getInfraNetworkResponse200 = {
+  data: GetInfraNetwork200
+  status: 200
+}
+
+export type getInfraNetworkResponse502 = {
+  data: GetInfraNetwork502
+  status: 502
+}
+
+export type getInfraNetworkResponseSuccess = (getInfraNetworkResponse200) & {
+  headers: Headers;
+};
+export type getInfraNetworkResponseError = (getInfraNetworkResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraNetworkResponse = (getInfraNetworkResponseSuccess | getInfraNetworkResponseError)
+
+export const getGetInfraNetworkUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/network`
+}
+
+export const getInfraNetwork = async ( options?: RequestInit): Promise<getInfraNetworkResponse> => {
+
+  const res = await fetch(getGetInfraNetworkUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraNetworkResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraNetworkResponse
+}
+
+
+
+export type getInfraMachinesResponse200 = {
+  data: GetInfraMachines200
+  status: 200
+}
+
+export type getInfraMachinesResponse502 = {
+  data: GetInfraMachines502
+  status: 502
+}
+
+export type getInfraMachinesResponseSuccess = (getInfraMachinesResponse200) & {
+  headers: Headers;
+};
+export type getInfraMachinesResponseError = (getInfraMachinesResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraMachinesResponse = (getInfraMachinesResponseSuccess | getInfraMachinesResponseError)
+
+export const getGetInfraMachinesUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/machines`
+}
+
+export const getInfraMachines = async ( options?: RequestInit): Promise<getInfraMachinesResponse> => {
+
+  const res = await fetch(getGetInfraMachinesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraMachinesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraMachinesResponse
+}
+
+
+
+export type getInfraGpuResponse200 = {
+  data: GetInfraGpu200
+  status: 200
+}
+
+export type getInfraGpuResponse502 = {
+  data: GetInfraGpu502
+  status: 502
+}
+
+export type getInfraGpuResponseSuccess = (getInfraGpuResponse200) & {
+  headers: Headers;
+};
+export type getInfraGpuResponseError = (getInfraGpuResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraGpuResponse = (getInfraGpuResponseSuccess | getInfraGpuResponseError)
+
+export const getGetInfraGpuUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/gpu`
+}
+
+export const getInfraGpu = async ( options?: RequestInit): Promise<getInfraGpuResponse> => {
+
+  const res = await fetch(getGetInfraGpuUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraGpuResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraGpuResponse
+}
+
+
+
+export type getInfraActivepiecesResponse200 = {
+  data: GetInfraActivepieces200
+  status: 200
+}
+
+export type getInfraActivepiecesResponse502 = {
+  data: GetInfraActivepieces502
+  status: 502
+}
+
+export type getInfraActivepiecesResponseSuccess = (getInfraActivepiecesResponse200) & {
+  headers: Headers;
+};
+export type getInfraActivepiecesResponseError = (getInfraActivepiecesResponse502) & {
+  headers: Headers;
+};
+
+export type getInfraActivepiecesResponse = (getInfraActivepiecesResponseSuccess | getInfraActivepiecesResponseError)
+
+export const getGetInfraActivepiecesUrl = () => {
+
+
+
+
+  return `http://localhost:3000/infra/activepieces`
+}
+
+export const getInfraActivepieces = async ( options?: RequestInit): Promise<getInfraActivepiecesResponse> => {
+
+  const res = await fetch(getGetInfraActivepiecesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInfraActivepiecesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getInfraActivepiecesResponse
 }

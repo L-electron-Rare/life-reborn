@@ -1,6 +1,12 @@
 import { beforeEach, describe, it, expect, vi, afterEach } from "vitest";
 import { Hono } from "hono";
-import { authMiddleware, isAuthConfigured, allowPublicApi } from "../middleware/auth.js";
+import {
+  authMiddleware,
+  isAuthConfigured,
+  allowPublicApi,
+  extractBearerToken,
+  matchesStaticBearerToken,
+} from "../middleware/auth.js";
 
 function createApp() {
   const app = new Hono();
@@ -37,11 +43,11 @@ describe("authMiddleware - public API mode", () => {
 });
 
 describe("authMiddleware - token configured, public mode off", () => {
-  const SECRET = "super-secret-token";
+  const STATIC_API_TOKEN = "test-static-token";
 
   beforeEach(() => {
     vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
-    vi.stubEnv("LIFE_REBORN_API_TOKEN", SECRET);
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", STATIC_API_TOKEN);
   });
 
   afterEach(() => {
@@ -51,7 +57,7 @@ describe("authMiddleware - token configured, public mode off", () => {
   it("returns 200 when valid Bearer token is provided", async () => {
     const app = createApp();
     const res = await app.request("/protected", {
-      headers: { Authorization: `Bearer ${SECRET}` },
+      headers: { Authorization: `Bearer ${STATIC_API_TOKEN}` },
     });
     expect(res.status).toBe(200);
     const data = await res.json();
@@ -79,7 +85,7 @@ describe("authMiddleware - token configured, public mode off", () => {
   it("returns 401 when Authorization uses Basic scheme instead of Bearer", async () => {
     const app = createApp();
     const res = await app.request("/protected", {
-      headers: { Authorization: `Basic ${Buffer.from(`user:${SECRET}`).toString("base64")}` },
+      headers: { Authorization: `Basic ${Buffer.from(`user:${STATIC_API_TOKEN}`).toString("base64")}` },
     });
     expect(res.status).toBe(401);
   });
@@ -138,5 +144,25 @@ describe("allowPublicApi helper", () => {
   it("returns false when LIFE_REBORN_ALLOW_PUBLIC_API is absent", () => {
     vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "");
     expect(allowPublicApi()).toBe(false);
+  });
+});
+
+describe("Bearer token helpers", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("extracts the Bearer token value from the Authorization header", () => {
+    expect(extractBearerToken("Bearer abc-123")).toBe("abc-123");
+  });
+
+  it("returns false when the configured static token is missing", () => {
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", "");
+    expect(matchesStaticBearerToken("Bearer abc-123")).toBe(false);
+  });
+
+  it("returns true when the Authorization header matches the configured static token", () => {
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", "abc-123");
+    expect(matchesStaticBearerToken("Bearer abc-123")).toBe(true);
   });
 });
