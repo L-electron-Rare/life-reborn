@@ -8,6 +8,18 @@ export function allowPublicApi(): boolean {
   return /^(1|true|yes)$/i.test(String(process.env.LIFE_REBORN_ALLOW_PUBLIC_API || "").trim());
 }
 
+export function extractBearerToken(header?: string | null): string {
+  return header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
+}
+
+export function matchesStaticBearerToken(header?: string | null): boolean {
+  const expected = process.env.LIFE_REBORN_API_TOKEN?.trim();
+  if (!expected) {
+    return false;
+  }
+  return extractBearerToken(header) === expected;
+}
+
 // Warn at module load time if token is missing and public API mode is not enabled.
 if (!isAuthConfigured() && !allowPublicApi()) {
   console.warn(
@@ -32,7 +44,7 @@ export const authMiddleware: MiddlewareHandler = async (c, next) => {
   }
 
   const header = c.req.header("Authorization");
-  const received = header?.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  const received = extractBearerToken(header);
 
   if (received !== expected) {
     return c.json({ error: "Unauthorized" }, 401);

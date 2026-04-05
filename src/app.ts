@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { matchesStaticBearerToken } from "./middleware/auth.js";
 import { jwtAuthMiddleware } from "./middleware/jwt.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerChatRouteV2, registerChatRouteV1 } from "./routes/chat-v2.js";
@@ -29,6 +30,7 @@ export function buildApp(): OpenAPIHono {
     const path = c.req.path;
     const publicPaths = ["/health", "/api/version", "/doc", "/"];
     if (publicPaths.includes(path) || path.startsWith("/rag/")) return next();
+    if (matchesStaticBearerToken(c.req.header("Authorization"))) return next();
     return jwtAuth(c, next);
   });
   app.use("/api/chat", rateLimitMiddleware);

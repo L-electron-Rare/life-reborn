@@ -1,6 +1,12 @@
 import { beforeEach, describe, it, expect, vi, afterEach } from "vitest";
 import { Hono } from "hono";
-import { authMiddleware, isAuthConfigured, allowPublicApi } from "../middleware/auth.js";
+import {
+  authMiddleware,
+  isAuthConfigured,
+  allowPublicApi,
+  extractBearerToken,
+  matchesStaticBearerToken,
+} from "../middleware/auth.js";
 
 function createApp() {
   const app = new Hono();
@@ -138,5 +144,25 @@ describe("allowPublicApi helper", () => {
   it("returns false when LIFE_REBORN_ALLOW_PUBLIC_API is absent", () => {
     vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "");
     expect(allowPublicApi()).toBe(false);
+  });
+});
+
+describe("Bearer token helpers", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("extracts the Bearer token value from the Authorization header", () => {
+    expect(extractBearerToken("Bearer abc-123")).toBe("abc-123");
+  });
+
+  it("returns false when the configured static token is missing", () => {
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", "");
+    expect(matchesStaticBearerToken("Bearer abc-123")).toBe(false);
+  });
+
+  it("returns true when the Authorization header matches the configured static token", () => {
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", "abc-123");
+    expect(matchesStaticBearerToken("Bearer abc-123")).toBe(true);
   });
 });

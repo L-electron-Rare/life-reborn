@@ -135,5 +135,6 @@ describe("Chat V2 Route - Request Validation", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("x-correlation-id")).toBeTruthy();
   });
 });
