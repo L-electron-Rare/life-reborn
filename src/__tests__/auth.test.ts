@@ -43,11 +43,11 @@ describe("authMiddleware - public API mode", () => {
 });
 
 describe("authMiddleware - token configured, public mode off", () => {
-  const SECRET = "super-secret-token";
+  const STATIC_API_TOKEN = "test-static-token";
 
   beforeEach(() => {
     vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
-    vi.stubEnv("LIFE_REBORN_API_TOKEN", SECRET);
+    vi.stubEnv("LIFE_REBORN_API_TOKEN", STATIC_API_TOKEN);
   });
 
   afterEach(() => {
@@ -57,7 +57,7 @@ describe("authMiddleware - token configured, public mode off", () => {
   it("returns 200 when valid Bearer token is provided", async () => {
     const app = createApp();
     const res = await app.request("/protected", {
-      headers: { Authorization: `Bearer ${SECRET}` },
+      headers: { Authorization: `Bearer ${STATIC_API_TOKEN}` },
     });
     expect(res.status).toBe(200);
     const data = await res.json();
@@ -85,7 +85,7 @@ describe("authMiddleware - token configured, public mode off", () => {
   it("returns 401 when Authorization uses Basic scheme instead of Bearer", async () => {
     const app = createApp();
     const res = await app.request("/protected", {
-      headers: { Authorization: `Basic ${Buffer.from(`user:${SECRET}`).toString("base64")}` },
+      headers: { Authorization: `Basic ${Buffer.from(`user:${STATIC_API_TOKEN}`).toString("base64")}` },
     });
     expect(res.status).toBe(401);
   });
