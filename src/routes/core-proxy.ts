@@ -34,6 +34,7 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/api/audit/report", upstreamPath: "/audit/report" },
   { path: "/api/chat/stream", upstreamPath: "/chat/stream" },
   { path: "/api/alerts", upstreamPath: "/alerts" },
+  { path: "/api/web-search", upstreamPath: "/web-search" },
 ];
 
 const passthroughErrorSchema = z.object({
