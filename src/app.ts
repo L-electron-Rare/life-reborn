@@ -7,6 +7,7 @@ import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { registerChatRouteV2, registerChatRouteV1 } from "./routes/chat-v2.js";
 import { registerBrowserRoute } from "./routes/browser.js";
 import { registerCoreProxyRoutes } from "./routes/core-proxy.js";
+import { registerGooseProxyRoutes } from "./routes/goose-proxy.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerProvidersRoute } from "./routes/providers.js";
 import { registerVersionRoute } from "./routes/version.js";
@@ -46,6 +47,7 @@ export function buildApp(): OpenAPIHono {
   registerChatRouteV1(app);
   registerChatRouteV2(app);
   registerBrowserRoute(app);
+  registerGooseProxyRoutes(app);
   registerCoreProxyRoutes(app);
 
   app.doc("/doc", {
