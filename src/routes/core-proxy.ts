@@ -35,6 +35,13 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/api/chat/stream", upstreamPath: "/chat/stream" },
   { path: "/api/alerts", upstreamPath: "/alerts" },
   { path: "/api/web-search", upstreamPath: "/web-search" },
+  { path: "/projects" },
+  { path: "/projects/:name" },
+  { path: "/projects/:name/tasks" },
+  { path: "/projects/:name/tasks/:taskId" },
+  { path: "/projects/:name/sync" },
+  { path: "/projects/:name/timeline" },
+  { path: "/team/members" },
 ];
 
 const passthroughErrorSchema = z.object({
