@@ -1,0 +1,71 @@
+name: CI (Node / Web)
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths-ignore: ['**/*.md', 'docs/**']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-node-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test (node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20", "22"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Detect package manager
+        id: pm
+        run: |
+          if [ -f pnpm-lock.yaml ]; then echo "pm=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f yarn.lock ]; then echo "pm=yarn" >> "$GITHUB_OUTPUT"
+          elif [ -f bun.lockb ] || [ -f bun.lock ]; then echo "pm=bun" >> "$GITHUB_OUTPUT"
+          else echo "pm=npm" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: ${{ steps.pm.outputs.pm == 'bun' && '' || steps.pm.outputs.pm }}
+
+      - name: Setup pnpm
+        if: steps.pm.outputs.pm == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Install dependencies
+        run: |
+          case "${{ steps.pm.outputs.pm }}" in
+            pnpm) pnpm install --frozen-lockfile ;;
+            yarn) yarn install --frozen-lockfile ;;
+            bun)  npm i -g bun && bun install --frozen-lockfile ;;
+            npm)  npm ci ;;
+          esac
+
+      - name: Lint
+        run: ${{ steps.pm.outputs.pm }} run lint --if-present
+        continue-on-error: true
+
+      - name: Typecheck
+        run: ${{ steps.pm.outputs.pm }} run typecheck --if-present
+        continue-on-error: true
+
+      - name: Test
+        run: ${{ steps.pm.outputs.pm }} run test --if-present
+
+      - name: Build
+        run: ${{ steps.pm.outputs.pm }} run build --if-present
