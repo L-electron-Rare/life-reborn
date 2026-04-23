@@ -1277,6 +1277,40 @@ async function proxyToCore(c: Context, upstreamPath = c.req.path): Promise<Respo
   }
 }
 
+async function proxyServerSentEvents(c: Context): Promise<Response> {
+  const { headers, correlationId } = buildForwardHeaders(c.req.raw, c.req.raw.headers);
+  headers.delete("host");
+  headers.set("accept", "text/event-stream");
+
+  try {
+    const requestUrl = new URL(c.req.url);
+    const targetPath = `/events${requestUrl.search}`;
+    const response = await fetchCore(targetPath, {
+      method: "GET",
+      headers,
+    });
+
+    const responseHeaders = new Headers(response.headers);
+    responseHeaders.set("X-Correlation-ID", correlationId);
+    responseHeaders.set("Content-Type", "text/event-stream");
+    responseHeaders.set("Cache-Control", "no-cache");
+    responseHeaders.set("Connection", "keep-alive");
+    responseHeaders.set("X-Accel-Buffering", "no");
+
+    return new Response(response.body, {
+      status: response.status,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return c.json(
+      { error: `Failed to reach life-core SSE stream: ${message}` },
+      503,
+      { "X-Correlation-ID": correlationId },
+    );
+  }
+}
+
 export function registerCoreProxyRoutes(app: OpenAPIHono): void {
   const documentedPaths = new Set<string>(
     documentedReadRoutes.flatMap((route) => [route.path, toHonoPath(route.path)]),
@@ -1302,4 +1336,7 @@ export function registerCoreProxyRoutes(app: OpenAPIHono): void {
     }
     app.all(route.path, (c) => proxyToCore(c, route.upstreamPath));
   }
+
+  // SSE stream proxy: preserve streaming, force no-buffering headers, keep auth
+  app.get("/events", proxyServerSentEvents);
 }

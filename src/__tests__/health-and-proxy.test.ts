@@ -244,7 +244,57 @@ describe("Core proxy routes - successful passthrough", () => {
   });
 });
 
+describe("Core proxy routes - SSE /events passthrough", () => {
+  beforeEach(() => {
+    mockBuildForwardHeaders.mockReturnValue({
+      headers: new Headers(),
+      correlationId: "corr-sse-1",
+    });
+  });
+
+  it("proxies GET /events to life-core and streams the SSE body", async () => {
+    const sseBody = "event: snapshot\ndata: {\"ok\":true}\n\n";
+    mockFetchCore.mockImplementation(async (path: string, init?: RequestInit) => {
+      expect(path).toBe("/events");
+      expect(init?.method).toBe("GET");
+      return new Response(sseBody, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    });
+
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/events");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(res.headers.get("cache-control")).toBe("no-cache");
+    expect(res.headers.get("x-accel-buffering")).toBe("no");
+    expect(res.headers.get("x-correlation-id")).toBe("corr-sse-1");
+    const text = await res.text();
+    expect(text).toContain("event: snapshot");
+  });
+
+  it("returns 503 when life-core is unreachable for /events", async () => {
+    mockFetchCore.mockRejectedValue(new Error("ECONNREFUSED"));
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/events");
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.error).toContain("SSE");
+  });
+});
+
 describe("Core proxy routes - upstream failures", () => {
+  beforeEach(() => {
+    mockBuildForwardHeaders.mockReturnValue({
+      headers: new Headers(),
+      correlationId: "corr-test-123",
+    });
+  });
+
   it("returns 502 with error message when fetchCore throws a network error", async () => {
     mockFetchCore.mockRejectedValue(new Error("ECONNREFUSED"));
     const app = new OpenAPIHono();
