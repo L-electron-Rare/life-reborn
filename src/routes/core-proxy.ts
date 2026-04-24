@@ -42,6 +42,9 @@ const CORE_PROXY_ROUTES: ProxyRoute[] = [
   { path: "/projects/:name/sync" },
   { path: "/projects/:name/timeline" },
   { path: "/team/members" },
+  { path: "/config/platform" },
+  { path: "/config/providers" },
+  { path: "/config/preferences" },
 ];
 
 const passthroughErrorSchema = z.object({
