@@ -32,7 +32,7 @@ export function buildApp(): OpenAPIHono {
   app.use("*", async (c, next) => {
     const path = c.req.path;
     const publicPaths = ["/health", "/api/version", "/doc", "/"];
-    if (publicPaths.includes(path) || path.startsWith("/rag/")) return next();
+    if (publicPaths.includes(path)) return next();
     if (matchesStaticBearerToken(c.req.header("Authorization"))) return next();
     return jwtAuth(c, next);
   });
