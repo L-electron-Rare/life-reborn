@@ -5,6 +5,8 @@ export type CoreHealth = {
   providers?: string[];
   backends?: string[];
   cache_available?: boolean;
+  router_status?: Record<string, boolean>;
+  issues?: string[];
 };
 
 export function getCoreUrl(): string {
