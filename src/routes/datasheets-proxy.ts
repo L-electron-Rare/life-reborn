@@ -67,7 +67,7 @@ export function registerDatasheetsProxyRoutes(app: OpenAPIHono): void {
   // V1.8 Wave B axes 1+6 — multipart upload passthrough to datasheet-mcp HTTP.
   app.post("/api/datasheets/upload", async (c: Context) => {
     const upstream = process.env.DATASHEET_MCP_HTTP_URL
-      ?? "http://datasheet-mcp:8022";
+      ?? "http://datasheet-mcp:8023";
     const bearer = process.env.DATASHEET_BEARER ?? "";
 
     const incoming = await c.req.formData();
@@ -97,7 +97,7 @@ export function registerDatasheetsProxyRoutes(app: OpenAPIHono): void {
   // the sidebar without going direct to the MCP host.
   app.get("/api/datasheets/list", async (c: Context) => {
     const upstream = process.env.DATASHEET_MCP_HTTP_URL
-      ?? "http://datasheet-mcp:8022";
+      ?? "http://datasheet-mcp:8023";
     const bearer = process.env.DATASHEET_BEARER ?? "";
     const res = await fetch(`${upstream}/datasheets`, {
       headers: bearer ? { authorization: `Bearer ${bearer}` } : {},
@@ -108,7 +108,7 @@ export function registerDatasheetsProxyRoutes(app: OpenAPIHono): void {
   // V1.8 Wave B axes 1+6 — keyword search passthrough.
   app.get("/api/datasheets/search", async (c: Context) => {
     const upstream = process.env.DATASHEET_MCP_HTTP_URL
-      ?? "http://datasheet-mcp:8022";
+      ?? "http://datasheet-mcp:8023";
     const bearer = process.env.DATASHEET_BEARER ?? "";
     const q = c.req.query("q") ?? "";
     const limit = c.req.query("limit") ?? "20";

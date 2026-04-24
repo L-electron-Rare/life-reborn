@@ -102,7 +102,7 @@ describe("datasheets-proxy — V1.8 HTTP passthrough", () => {
     app = new Hono();
     registerDatasheetsProxyRoutes(app as any);
     vi.clearAllMocks();
-    process.env.DATASHEET_MCP_HTTP_URL = "http://datasheet-mcp:8022";
+    process.env.DATASHEET_MCP_HTTP_URL = "http://datasheet-mcp:8023";
     process.env.DATASHEET_BEARER = "";
   });
 
