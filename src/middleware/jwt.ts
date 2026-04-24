@@ -36,12 +36,25 @@ export function jwtAuthMiddleware(options: JwtAuthOptions) {
       return next();
     }
 
+    let token: string | undefined;
     const authHeader = c.req.header("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return c.json({ error: "Missing or invalid Authorization header" }, 401);
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
     }
 
-    const token = authHeader.slice(7);
+    // SSE fallback: EventSource cannot set custom headers, so the /events
+    // endpoint accepts the JWT as a query-string parameter. Restricted to
+    // /events only to avoid leaking tokens in access logs / referrers.
+    if (!token && c.req.path === "/events") {
+      const queryToken = c.req.query("access_token");
+      if (queryToken) {
+        token = queryToken;
+      }
+    }
+
+    if (!token) {
+      return c.json({ error: "Missing or invalid Authorization header" }, 401);
+    }
 
     try {
       const keySet = await getJWKS(options.jwksUrl);
