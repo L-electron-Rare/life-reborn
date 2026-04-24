@@ -78,6 +78,36 @@ describe("App Integration - Routes Registration", () => {
     expect(response.status).toBe(401);
   });
 
+  it("should return 401 on /rag/stats without auth", async () => {
+    vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
+    const app = buildApp();
+    const response = await app.request(
+      new Request("http://localhost/rag/stats", { method: "GET" })
+    );
+    expect(response.status).toBe(401);
+    vi.unstubAllEnvs();
+  });
+
+  it("should return 401 on /rag/documents without auth", async () => {
+    vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
+    const app = buildApp();
+    const response = await app.request(
+      new Request("http://localhost/rag/documents", { method: "GET" })
+    );
+    expect(response.status).toBe(401);
+    vi.unstubAllEnvs();
+  });
+
+  it("should return 401 on /rag/search without auth", async () => {
+    vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
+    const app = buildApp();
+    const response = await app.request(
+      new Request("http://localhost/rag/search?q=test", { method: "GET" })
+    );
+    expect(response.status).toBe(401);
+    vi.unstubAllEnvs();
+  });
+
   it("should allow protected routes with the static bearer token", async () => {
     vi.stubEnv("LIFE_REBORN_API_TOKEN", "test-static-token");
     vi.stubEnv("LIFE_REBORN_ALLOW_PUBLIC_API", "false");
