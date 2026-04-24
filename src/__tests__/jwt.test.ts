@@ -63,4 +63,36 @@ describe("JWT Auth Middleware", () => {
       expect(res.status).toBe(401);
     }
   });
+
+  describe("access_token query string fallback (SSE / EventSource)", () => {
+    it("accepts ?access_token=<jwt> on /events when Authorization header absent", async () => {
+      const app = createApp();
+      // EventSource cannot set custom headers, so frontend passes token in query string.
+      // Token is invalid here, but the middleware must at least *consider* it (401 for
+      // "Invalid or expired token") instead of rejecting with "Missing Authorization header".
+      const res = await app.request("/events?access_token=not-a-real-jwt");
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).not.toContain("Missing");
+      expect(data.error).toContain("Invalid");
+    });
+
+    it("rejects /events without any token (neither header nor query)", async () => {
+      const app = createApp();
+      const res = await app.request("/events");
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).toContain("Missing");
+    });
+
+    it("ignores ?access_token query on non-/events routes (scope restriction)", async () => {
+      const app = createApp();
+      // Query-string token must NOT be honored on other routes, to avoid leaking
+      // the token in access logs / referrers for non-SSE endpoints.
+      const res = await app.request("/stats?access_token=not-a-real-jwt");
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.error).toContain("Missing");
+    });
+  });
 });

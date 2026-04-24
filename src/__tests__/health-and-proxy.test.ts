@@ -32,6 +32,8 @@ describe("Health route - fetchCoreHealth succeeds", () => {
       providers: ["claude", "openai"],
       backends: ["ollama"],
       cache_available: true,
+      router_status: { claude: true, openai: false },
+      issues: ["router:openai:down"],
     });
   });
 
@@ -68,6 +70,42 @@ describe("Health route - fetchCoreHealth succeeds", () => {
     const data = await res.json();
     expect(data.cache_available).toBe(true);
   });
+
+  it("surfaces router_status from core response", async () => {
+    const app = new OpenAPIHono();
+    registerHealthRoute(app);
+    const res = await app.request("/health");
+    const data = await res.json();
+    expect(data.router_status).toEqual({ claude: true, openai: false });
+  });
+
+  it("surfaces issues list from core response", async () => {
+    const app = new OpenAPIHono();
+    registerHealthRoute(app);
+    const res = await app.request("/health");
+    const data = await res.json();
+    expect(data.issues).toEqual(["router:openai:down"]);
+  });
+});
+
+describe("Health route - fetchCoreHealth succeeds without new fields", () => {
+  beforeEach(() => {
+    mockFetchCoreHealth.mockResolvedValue({
+      status: "ok",
+      providers: ["claude"],
+      backends: [],
+      cache_available: false,
+    });
+  });
+
+  it("defaults router_status and issues to empty when absent upstream", async () => {
+    const app = new OpenAPIHono();
+    registerHealthRoute(app);
+    const res = await app.request("/health");
+    const data = await res.json();
+    expect(data.router_status).toEqual({});
+    expect(data.issues).toEqual([]);
+  });
 });
 
 describe("Health route - fetchCoreHealth fails", () => {
@@ -99,6 +137,8 @@ describe("Health route - fetchCoreHealth fails", () => {
     expect(data.providers).toEqual([]);
     expect(data.backends).toEqual([]);
     expect(data.cache_available).toBe(false);
+    expect(data.router_status).toEqual({});
+    expect(data.issues).toEqual([]);
   });
 });
 
@@ -169,6 +209,40 @@ describe("Core proxy routes - successful passthrough", () => {
       collections: ["life_chunks"],
       results: [],
     });
+  });
+
+  it("proxies GET /config/platform to life-core", async () => {
+    mockFetchCore.mockImplementation(async (path: string) => {
+      expect(path).toBe("/config/platform");
+      return new Response(JSON.stringify({
+        services: [{ name: "redis", ok: true }],
+        overall_ok: true,
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/config/platform");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("services");
+    expect(data.overall_ok).toBe(true);
+  });
+
+  it("proxies GET /config/providers to life-core", async () => {
+    mockFetchCore.mockImplementation(async (path: string) => {
+      expect(path).toBe("/config/providers");
+      return new Response(JSON.stringify([{ name: "claude", active: true, priority: 0 }]), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/config/providers");
+    expect(res.status).toBe(200);
   });
 
   it("proxies GET /conversations and returns upstream body", async () => {
@@ -244,7 +318,57 @@ describe("Core proxy routes - successful passthrough", () => {
   });
 });
 
+describe("Core proxy routes - SSE /events passthrough", () => {
+  beforeEach(() => {
+    mockBuildForwardHeaders.mockReturnValue({
+      headers: new Headers(),
+      correlationId: "corr-sse-1",
+    });
+  });
+
+  it("proxies GET /events to life-core and streams the SSE body", async () => {
+    const sseBody = "event: snapshot\ndata: {\"ok\":true}\n\n";
+    mockFetchCore.mockImplementation(async (path: string, init?: RequestInit) => {
+      expect(path).toBe("/events");
+      expect(init?.method).toBe("GET");
+      return new Response(sseBody, {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    });
+
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/events");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    expect(res.headers.get("cache-control")).toBe("no-cache");
+    expect(res.headers.get("x-accel-buffering")).toBe("no");
+    expect(res.headers.get("x-correlation-id")).toBe("corr-sse-1");
+    const text = await res.text();
+    expect(text).toContain("event: snapshot");
+  });
+
+  it("returns 503 when life-core is unreachable for /events", async () => {
+    mockFetchCore.mockRejectedValue(new Error("ECONNREFUSED"));
+    const app = new OpenAPIHono();
+    registerCoreProxyRoutes(app);
+    const res = await app.request("/events");
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.error).toContain("SSE");
+  });
+});
+
 describe("Core proxy routes - upstream failures", () => {
+  beforeEach(() => {
+    mockBuildForwardHeaders.mockReturnValue({
+      headers: new Headers(),
+      correlationId: "corr-test-123",
+    });
+  });
+
   it("returns 502 with error message when fetchCore throws a network error", async () => {
     mockFetchCore.mockRejectedValue(new Error("ECONNREFUSED"));
     const app = new OpenAPIHono();
