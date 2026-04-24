@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Hono } from "hono";
 
 vi.mock("../client/datasheet-mcp.js", () => ({
@@ -91,5 +91,120 @@ describe("datasheets-proxy", () => {
     });
 
     expect(res.status).toBe(502);
+  });
+});
+
+describe("datasheets-proxy — V1.8 HTTP passthrough", () => {
+  let app: Hono;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    app = new Hono();
+    registerDatasheetsProxyRoutes(app as any);
+    vi.clearAllMocks();
+    process.env.DATASHEET_MCP_HTTP_URL = "http://datasheet-mcp:8022";
+    process.env.DATASHEET_BEARER = "";
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("POST /api/datasheets/upload proxies multipart to datasheet-mcp", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          id: "abc123",
+          mpn: "KXKM-18650-3500",
+          page_count: 1,
+          stored_path: "/tmp/abc123.pdf",
+          fields: { voltage_v: 3.7 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const form = new FormData();
+    form.append("mpn", "KXKM-18650-3500");
+    form.append(
+      "file",
+      new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], {
+        type: "application/pdf",
+      }),
+      "kxkm.pdf",
+    );
+
+    const res = await app.request("/api/datasheets/upload", {
+      method: "POST",
+      body: form,
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.mpn).toBe("KXKM-18650-3500");
+    expect(body.id).toBe("abc123");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const callUrl = fetchMock.mock.calls[0][0] as string;
+    expect(callUrl).toMatch(/\/datasheets\/upload$/);
+  });
+
+  it("POST /api/datasheets/upload returns 400 when mpn missing", async () => {
+    const form = new FormData();
+    form.append(
+      "file",
+      new Blob([new Uint8Array([0x25])], { type: "application/pdf" }),
+      "x.pdf",
+    );
+    const res = await app.request("/api/datasheets/upload", {
+      method: "POST",
+      body: form,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("GET /api/datasheets/list proxies to datasheet-mcp /datasheets", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await app.request("/api/datasheets/list");
+    expect(res.status).toBe(200);
+    const callUrl = fetchMock.mock.calls[0][0] as string;
+    expect(callUrl).toMatch(/\/datasheets$/);
+  });
+
+  it("GET /api/datasheets/search forwards q and limit", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ query: "kxkm", results: [] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const res = await app.request("/api/datasheets/search?q=kxkm&limit=5");
+    expect(res.status).toBe(200);
+    const callUrl = fetchMock.mock.calls[0][0] as string;
+    expect(callUrl).toContain("/datasheets/search?q=kxkm&limit=5");
+  });
+
+  it("attaches bearer header when DATASHEET_BEARER set", async () => {
+    process.env.DATASHEET_BEARER = "secret-token";
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    await app.request("/api/datasheets/list");
+    const init = fetchMock.mock.calls[0][1] as RequestInit | undefined;
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    expect(headers.authorization).toBe("Bearer secret-token");
   });
 });
