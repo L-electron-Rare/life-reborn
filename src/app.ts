@@ -9,6 +9,7 @@ import { registerBrowserRoute } from "./routes/browser.js";
 import { registerCoreProxyRoutes } from "./routes/core-proxy.js";
 import { registerDatasheetsProxyRoutes } from "./routes/datasheets-proxy.js";
 import { registerEdaProxyRoutes } from "./routes/eda-proxy.js";
+import { registerDesignProxyRoutes } from "./routes/design-proxy.js";
 import { registerGooseProxyRoutes } from "./routes/goose-proxy.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerProvidersRoute } from "./routes/providers.js";
@@ -50,6 +51,7 @@ export function buildApp(): OpenAPIHono {
   registerChatRouteV2(app);
   registerBrowserRoute(app);
   registerEdaProxyRoutes(app);
+  registerDesignProxyRoutes(app);
   registerGooseProxyRoutes(app);
   registerCoreProxyRoutes(app);
   registerDatasheetsProxyRoutes(app);
